@@ -1,0 +1,11 @@
+/* Custom card styles */
+.card-title-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-subtitle {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
