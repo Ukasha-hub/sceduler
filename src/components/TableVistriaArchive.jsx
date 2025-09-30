@@ -46,11 +46,11 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
          
 
           {/* Two Checkboxes */}
-          <label className="flex items-center space-x-1 text-sm text-gray-600">
+          <label className="flex items-center space-x-1 text-xs text-gray-600">
             <input type="checkbox" className="form-checkbox text-blue-600" />
             <span>Vistria</span>
           </label>
-          <label className="flex items-center space-x-1 text-sm text-gray-600">
+          <label className="flex items-center space-x-1 text-xs text-gray-600">
             <input type="checkbox" className="form-checkbox text-blue-600" />
             <span>Archive</span>
           </label>
@@ -64,7 +64,7 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
             placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full md:w-64"
+            className="border rounded px-2 py-1 text-xs w-full md:w-64"
           />
         </div>
 
@@ -76,7 +76,7 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left text-gray-600">
+        <table className="w-full text-xs text-left text-gray-600">
           <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
             <tr>
               <th className="px-4 py-3">Name</th>

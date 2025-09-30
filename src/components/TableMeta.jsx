@@ -238,27 +238,32 @@ const TableMeta = ( {data, onMoveRow, from,
         onDrop={handleDrop}
       >
         {/* Header with Search */}
-        <div className="datatable-header d-flex justify-content-between align-items-center">
-          <h6 className="mb-0 text-rundown">
+        <div className="datatable-header d-flex justify-content-between px-2 align-items-center">
+          <div className="mb-0 text-rundown">
             <i className="fas fa-table mr-2"></i>
             Programme Schedule
-          </h6>
+          </div>
           
           <div className="datatable-search">
-            <input
+            <ul className="flex gap-1">
+            <i className="fas fa-search search-icon mt-2"></i>
+          <i><input
               
               className="form-control form-control-sm"
               type="text"
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <i className="fas fa-search search-icon"></i>
+            /></i>
+            </ul>
+          
+            
+            
           </div>
         </div>
   
         {/* Table Body with Fixed Height and Scroll */}
-        <div className="datatable-body">
+        <div className="datatable-body" style={{ overflowX: "auto" }}>
           {loading && (
             <div className="loading-overlay">
               <div className="loading-spinner"></div>
@@ -268,10 +273,10 @@ const TableMeta = ( {data, onMoveRow, from,
           <table className="datatable-table table table-hover">
             <thead>
               <tr>
-              <th className="px-4 py-3">ID</th>
-              <th className="px-4 py-3">Start Time</th>
-              <th className="px-4 py-3">End Time</th>
-              <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3 w-[80px]">ID</th>
+              <th className="px-4 py-3 w-[140px]">Start Time</th>
+              <th className="px-4 py-3 w-[140px]">End Time</th>
+              <th className="px-4 py-3 w-[300px]">Name</th>
               <th className="px-4 py-3">Duration</th>
               <th className="px-4 py-3">is/Paid</th>
               </tr>
@@ -293,10 +298,10 @@ const TableMeta = ( {data, onMoveRow, from,
                   draggable
                   onDragStart={(e) => handleDragStart(e, row)}
                 >
-                  <td className="px-4 py-3 text-blue-600 font-medium">{row.id}</td>
-                  <td className="px-4 py-3">{row.startTime}</td>
-                  <td className="px-4 py-3">{row.endTime}</td>
-                  <td className="px-4 py-3">{row.name}</td>
+                  <td className="px-4 py-3 text-blue-600 font-medium w-[80px]">{row.id}</td>
+                  <td className="px-4 py-3 w-[140px]">{row.startTime}</td>
+                  <td className="px-4 py-3 w-[140px]">{row.endTime}</td>
+                  <td className="px-4 py-3 w-[300px]">{row.name}</td>
                   <td className="px-4 py-3">{row.duration}</td>
                   <td className="px-4 py-3">{row.isPaid ? "Yes" : "No"}</td>
                 </tr>
