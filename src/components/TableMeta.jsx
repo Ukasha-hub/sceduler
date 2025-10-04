@@ -238,7 +238,7 @@ const TableMeta = ( {data, onMoveRow, from,
         onDrop={handleDrop}
       >
         {/* Header with Search */}
-        <div className="datatable-header d-flex justify-content-between px-2 align-items-center">
+        <div className="datatable-header d-flex justify-content-between px-2 py-2 align-items-center">
           <div className="mb-0 text-rundown">
             <i className="fas fa-table mr-2"></i>
             Programme Schedule
@@ -263,69 +263,65 @@ const TableMeta = ( {data, onMoveRow, from,
         </div>
   
         {/* Table Body with Fixed Height and Scroll */}
-        <div className="datatable-body" style={{ overflowX: "auto" }}>
-          {loading && (
-            <div className="loading-overlay">
-              <div className="loading-spinner"></div>
-            </div>
-          )}
-          
-          <table className="datatable-table table table-hover">
-            <thead>
-              <tr>
-              <th className="px-4 py-3 w-[80px]">ID</th>
-              <th className="px-4 py-3 w-[140px]">Start Time</th>
-              <th className="px-4 py-3 w-[140px]">End Time</th>
-              <th className="px-4 py-3 w-[300px]">Name</th>
-              <th className="px-4 py-3">Duration</th>
-              <th className="px-4 py-3">is/Paid</th>
-              </tr>
-            </thead>
-            <tbody>
-            {filteredData.length === 0 ? (
-              <tr>
-                <td
-                  colSpan="6"
-                  className="px-4 py-6 text-center text-gray-500 italic"
-                >
-                  No data
-                </td>
-              </tr>
-            ) : (
-              filteredData.map((row) => (
-                <tr
-                  key={row.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, row)}
-                >
-                  <td className="px-4 py-3 text-blue-600 font-medium w-[80px]">{row.id}</td>
-                  <td className="px-4 py-3 w-[140px]">{row.startTime}</td>
-                  <td className="px-4 py-3 w-[140px]">{row.endTime}</td>
-                  <td className="px-4 py-3 w-[300px]">{row.name}</td>
-                  <td className="px-4 py-3">{row.duration}</td>
-                  <td className="px-4 py-3">{row.isPaid ? "Yes" : "No"}</td>
-                </tr>
-              ))
-            )}
-            </tbody>
-          </table>
-        </div>
+        <div className="datatable-body overflow-x-auto">
+
+  <table className="datatable-table table table-hover w-full min-w-max">
+    <thead className="bg-gray-100">
+      <tr>
+        <th className="px-4 py-3 w-[80px]">ID</th>
+        <th className="px-4 py-3 w-[140px]">Start Time</th>
+        <th className="px-4 py-3 w-[140px]">End Time</th>
+        <th className="px-4 py-3 w-[300px]">Programme Name</th>
+        <th className="px-4 py-3">Type</th>
+        <th className="px-4 py-3">Duration</th>
+        <th className="px-4 py-3">L/P/D</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filteredData.length === 0 ? (
+        <tr>
+          <td colSpan="6" className="px-4 py-6 text-center text-gray-500 italic">
+            No data
+          </td>
+        </tr>
+      ) : (
+        filteredData.map((row) => (
+          <tr
+            key={row.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, row)}
+          >
+            <td className="px-4 py-3 w-[80px] text-blue-600 font-medium">{row.id}</td>
+            <td className="px-4 py-3 w-[140px]">{row.startTime}</td>
+            <td className="px-4 py-3 w-[140px]">{row.endTime}</td>
+            <td className="px-4 py-3 w-[300px]">{row.name}</td>
+            <td className="px-4 py-3">{row.type}</td>
+            <td className="px-4 py-3">{row.duration}</td>
+            <td className="px-4 py-3">{row.isPaid ? "Yes" : "No"}</td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+
+</div>
+
+{/* Footer stays under the table */}
+<div className="datatable-footer bg-white border-t mt-2 p-2">
+  <div className="datatable-info">
+    Showing {totalRecords > 0 ? startRecord : 0} to {endRecord} of {totalRecords} entries
+    {localSearchValue && ` (filtered from ${totalRecords} total entries)`}
+  </div>
+  {totalPages > 1 && (
+    <nav>
+      <ul className="datatable-pagination pagination pagination-sm">
+        {renderPagination()}
+      </ul>
+    </nav>
+  )}
+</div>
   
-        {/* Footer with Pagination */}
-        <div className="datatable-footer">
-          <div className="datatable-info">
-            Showing {totalRecords > 0 ? startRecord : 0} to {endRecord} of {totalRecords} entries
-            {localSearchValue && ` (filtered from ${totalRecords} total entries)`}
-          </div>
-          
-          {totalPages > 1 && (
-            <nav>
-              <ul className="datatable-pagination pagination pagination-sm">
-                {renderPagination()}
-              </ul>
-            </nav>
-          )}
-        </div>
+        
       </div>
     );
 };
