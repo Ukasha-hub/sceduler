@@ -196,23 +196,29 @@ const Tables = () => {
   };
 
   // --- Resizer Logic ---
-  const initResize = e => {
+  const initResize = (e) => {
     e.preventDefault();
-    document.addEventListener('mousemove', handleMouseMove);
+    const startX = e.clientX;
+    const startWidth = metaWidth;
+  
+    const onMouseMove = (e) => {
+      const delta = e.clientX - startX;
+      const newWidth = startWidth + delta;
+  
+      if (newWidth >= 300 && newWidth <= window.innerWidth - 200) {
+        setMetaWidth(newWidth);
+      }
+    };
+  
+    const stopResize = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', stopResize);
+    };
+  
+    document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', stopResize);
   };
-
-  const handleMouseMove = e => {
-    const newWidth = e.clientX;
-    if (newWidth < 300) return;
-    if (newWidth > window.innerWidth - 200) return;
-    setMetaWidth(newWidth);
-  };
-
-  const stopResize = () => {
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', stopResize);
-  };
+  
 
   return (
     <div>
@@ -406,13 +412,13 @@ const Tables = () => {
                 />
               )}
 
-              <div className="card  rundown-table-card">
+              <div className="card  rundown-table-card justify-center">
                 <div className="card-header p-2 flex flex-row justify-end">
                   <button className="btn btn-sm btn-primary" onClick={() => setShowArchive(prev => !prev)}>
                     {showArchive ? '−' : '+'}
                   </button>
                 </div>
-                <div className="card-body" style={{ padding: 0, height: 'calc(100vh - 220px)' }}>
+                <div className="card-body " style={{ padding: 0, height: 'calc(100vh - 220px)' }}>
                   <TableMeta
                     data={metaData}
                     onMoveRow={moveRow}

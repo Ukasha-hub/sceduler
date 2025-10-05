@@ -34992,7 +34992,7 @@ a.close.disabled, a.disabled.mailbox-attachment-close {
   .login-box,
   .register-box {
     margin-top: .5rem;
-    width: 90%;
+    width: 12vw;
   }
 }
 
@@ -35088,7 +35088,7 @@ a.close.disabled, a.disabled.mailbox-attachment-close {
 
 @media (max-width: 767.98px) {
   .error-page {
-    width: 100%;
+    width: 12vw;
   }
 }
 
@@ -35112,7 +35112,7 @@ a.close.disabled, a.disabled.mailbox-attachment-close {
 
 @media (max-width: 767.98px) {
   .error-page > .error-content {
-    margin-left: 0;
+    margin-left: 12vw;
   }
 }
 
@@ -35577,6 +35577,14 @@ body.iframe-mode-fullscreen .content-wrapper.iframe-mode {
 .fc-color-picker > li .ion:hover {
   -webkit-transform: rotate(30deg);
   transform: rotate(30deg);
+}
+
+@media (min-width: 1024px) {
+  body.sidebar-mini .content-wrapper,
+  body.sidebar-mini .main-header,
+  body.sidebar-mini .main-footer {
+    margin-left: 12vw !important;   /* Match your new sidebar width */
+  }
 }
 
 #add-new-event {
@@ -53009,4 +53017,6 @@ a.text-muted:hover {
 .dark-mode .border-dark {
   border-color: #4b545c !important;
 }
+
+
 /*# sourceMappingURL=adminlte.css.map */

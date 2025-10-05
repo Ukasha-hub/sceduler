@@ -1,8 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ROUTES } from "../routes";
+import Tables from "../components/Tables";
+import Rundown from "../pages/Rundown";
+import Settings from "../pages/Settings";
 
-function SideNav() {
+function SideNav({ onOpenTab }) {
     const location = useLocation();
 
     // Helper function to check if current path matches
@@ -13,7 +16,7 @@ function SideNav() {
     return (
         <div>
             {/* Main Sidebar Container */}
-            <aside className="main-sidebar sidebar-dark-primary elevation-4 text-rundown">
+            <aside className="main-sidebar sidebar-dark-primary text-rundown fixed lg:static  ">
                 {/* Brand Logo */}
                 <Link to={ROUTES.HOME} className="brand-link">
                     <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" className="brand-image img-circle elevation-3" style={{ opacity: '.8' }} />
@@ -48,39 +51,37 @@ function SideNav() {
                     <nav className="mt-2">
                         <ul className="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                              {/* Add more menu items following React Router pattern */}
-                            <li className="nav-item">
-                                <Link to={ROUTES.HOME} className={`nav-link ${isActive(ROUTES.HOME)}`}>
-                                    <i className="nav-icon fas fa-tachometer-alt" />
-                                    <p>Dashboard</p>
-                                </Link>
-                            </li>
+                             <li className="nav-item">
+                <button
+                    className="nav-link text-left w-100"
+                    onClick={() => onOpenTab('dashboard', 'Dashboard', <Tables />)}
+                >
+                    <i className="nav-icon fas fa-tachometer-alt" />
+                    <p>Dashboard</p>
+                </button>
+            </li>
                             {/* Add more menu items following React Router pattern */}
                             <li className="nav-item">
-                                <Link to={ROUTES.RUNDOWN} className={`nav-link ${isActive(ROUTES.RUNDOWN)}`}>
-                                    <i className="nav-icon fas fa-chart-pie" />
-                                    <p>Rundown</p>
-                                </Link>
-                            </li>
+      <button
+        className="nav-link text-left w-100"
+        onClick={() => onOpenTab('rundown', 'Rundown', <Rundown />)}
+      >
+        <i className="nav-icon fas fa-chart-pie" />
+        <p>Rundown</p>
+      </button>
+    </li>
                             
                             {/* Rest of your existing menu items... */}
                             {/* Dashboard Section */}
                             <li className="nav-item">
-                                <a href="#" className="nav-link">
-                                    <i className="nav-icon fas fa-wrench" />
-                                    <p>
-                                        Settings
-                                        <i className="right fas fa-angle-left" />
-                                    </p>
-                                </a>
-                                <ul className="nav nav-treeview">
-                                    <li className="nav-item">
-                                        <Link to={ROUTES.SETTINGS} className={`nav-link ${isActive(ROUTES.SETTINGS)}`}>
-                                            <i className="far fa-circle nav-icon" />
-                                            <p>Settings</p>
-                                        </Link>
-                                    </li>
-                                </ul>
-                            </li>
+                <button
+                    className="nav-link text-left w-100"
+                    onClick={() => onOpenTab('settings', 'Settings', <Settings />)}
+                >
+                    <i className="far fa-circle nav-icon" />
+                    <p>Settings</p>
+                </button>
+            </li>
 
 
 

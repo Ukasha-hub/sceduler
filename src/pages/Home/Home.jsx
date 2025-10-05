@@ -34,16 +34,15 @@ function Home() {
 
   return (
     <div>
-     {/* Page Header */}
-     <PageHeader></PageHeader>
+     {/* <PageHeader></PageHeader>
 
-      {/* Main content */}
+      
       <section className="content">
         <div className="container-fluid">
-          {/* Tabs */}
+          
           <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          {/* Tab Content */}
+        
           <div className="tab-content">
             {activeTab === "folder-content" && (
               <div className="tab-pane fade show active p-4">
@@ -68,7 +67,7 @@ function Home() {
                   <AddFileModal onClose={() => setShowAddFileModal(false)} />
                 )}
 
-                {/* Folder grid + context menu */}
+               
                 <div
                   className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 p-10"
                   onContextMenu={(e) => {
@@ -96,7 +95,7 @@ function Home() {
     </div>
   ))}
 
-                  {/* Context Menu */}
+                 
                   <ContextMenu
   contextMenu={contextMenu}
   clipboard={clipboard}
@@ -156,7 +155,7 @@ function Home() {
                         isSelected={selectedItems.some((i) => i.id === item.id)}
                       />
                     ))}
-                     {/* Context Menu */}
+                    
                      <ContextMenu
   contextMenu={contextMenu}
   clipboard={clipboard}
@@ -250,7 +249,7 @@ function Home() {
                         </div>
                     
                  </div>
-                     {/* Context Menu */}
+                    
                      <ContextMenu
   contextMenu={contextMenu}
   clipboard={clipboard}
@@ -277,7 +276,7 @@ function Home() {
           </div>
         </div>
 
-        {/* Modals */}
+       
         <MoveFileFolderModal
           isOpen={showMoveModal}
           onClose={() => setShowMoveModal(false)}
@@ -297,7 +296,10 @@ function Home() {
           onClose={() => setShowRenameModal(false)}
           onRename={handleRenameHomePage}
         />
-      </section>
+      </section> */}
+
+
+     
 
 
     </div>

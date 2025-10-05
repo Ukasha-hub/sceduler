@@ -18,7 +18,7 @@ const SchedulerTable = lazy(() => import('../pages/SchedulerTable'));
 export const routes = [
   {
     path: '/',
-    element: () => <Navigate to="/schedulertable" replace />,
+    element: Home, //() => <Navigate to="/schedulertable" replace />,
     name: 'Home',
     exact: true,
   },

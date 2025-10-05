@@ -230,7 +230,7 @@ const TableMeta = ( {data, onMoveRow, from,
     return (
       <div 
         ref={containerRef}
-        className="datatable-container" 
+        className="datatable-container w-full" 
         style={{
           height: fillHeight ? containerHeight : 'auto'
         }}
@@ -246,7 +246,7 @@ const TableMeta = ( {data, onMoveRow, from,
           
           <div className="datatable-search">
             <ul className="flex gap-1">
-            <i className="fas fa-search search-icon mt-2"></i>
+            <i className="fas fa-search search-icon "></i>
           <i><input
               
               className="form-control form-control-sm"
@@ -268,13 +268,13 @@ const TableMeta = ( {data, onMoveRow, from,
   <table className="datatable-table table table-hover w-full min-w-max">
     <thead className="bg-gray-100">
       <tr>
-        <th className="px-4 py-3 w-[80px]">ID</th>
-        <th className="px-4 py-3 w-[140px]">Start Time</th>
-        <th className="px-4 py-3 w-[140px]">End Time</th>
-        <th className="px-4 py-3 w-[300px]">Programme Name</th>
-        <th className="px-4 py-3">Type</th>
-        <th className="px-4 py-3">Duration</th>
-        <th className="px-4 py-3">L/P/D</th>
+        <th className="px-4 py-3 w-[60px]">ID</th>
+        <th className="px-4 py-3 w-[100px]">Start Time</th>
+        <th className="px-4 py-3 w-[100px]">End Time</th>
+        <th className="px-4 py-3 w-[200px]">Programme Name</th>
+        <th className="px-4 py-3 w-[100px]">Type</th>
+        <th className="px-4 py-3 w-[100px]">Duration</th>
+        <th className="px-4 py-3 w-[60px]">L/P/D</th>
       </tr>
     </thead>
     <tbody>
@@ -291,13 +291,13 @@ const TableMeta = ( {data, onMoveRow, from,
             draggable
             onDragStart={(e) => handleDragStart(e, row)}
           >
-            <td className="px-4 py-3 w-[80px] text-blue-600 font-medium">{row.id}</td>
-            <td className="px-4 py-3 w-[140px]">{row.startTime}</td>
-            <td className="px-4 py-3 w-[140px]">{row.endTime}</td>
-            <td className="px-4 py-3 w-[300px]">{row.name}</td>
-            <td className="px-4 py-3">{row.type}</td>
-            <td className="px-4 py-3">{row.duration}</td>
-            <td className="px-4 py-3">{row.isPaid ? "Yes" : "No"}</td>
+            <td className="px-4 py-3 w-[60px] text-blue-600 font-medium">{row.id}</td>
+            <td className="px-4 py-3 w-[100px]">{row.startTime}</td>
+            <td className="px-4 py-3 w-[100px]">{row.endTime}</td>
+            <td className="px-4 py-3 w-[200px]">{row.name}</td>
+            <td className="px-4 py-3 w-[100px]">{row.type}</td>
+            <td className="px-4 py-3 w-[100px]">{row.duration}</td>
+            <td className="px-4 py-3 w-[60px]">{row.isPaid ? "Yes" : "No"}</td>
           </tr>
         ))
       )}
