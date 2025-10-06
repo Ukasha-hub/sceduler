@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import TableMeta from '../components/TableMeta';
 import TableVistriaArchive from '../components/TableVistriaArchive';
 import tableData from '../services/TableData';
@@ -10,123 +10,72 @@ const Tables = () => {
   const [vistriaData, setVistriaData] = useState(tableData);
   const [showArchive, setShowArchive] = useState(false);
   const [isServerFilterCollapsed, setIsServerFilterCollapsed] = useState(true);
-  // Notification state
-    const [notification, setNotification] = useState({
-      show: false,
-      type: '', // 'success' or 'error'
-      message: ''
-    });
-  
-  // Server selection states
-    const [serverFilters, setServerFilters] = useState({
-      primary: true,
-      secondary: true,
-      third: true,
-      fourth: true,
-    });
 
-     // Handle server filter changes
+  // Notification state
+  const [notification, setNotification] = useState({ show: false, type: '', message: '' });
+
+  // Server selection states
+  const [serverFilters, setServerFilters] = useState({
+    primary: true,
+    secondary: true,
+    third: true,
+    fourth: true,
+  });
+
   const handleServerFilterChange = (server, checked) => {
     setServerFilters((prev) => ({ ...prev, [server]: checked }));
   };
 
-  // Handle server selection actions
-  const handleSelectAllServers = () => {
-    setServerFilters({
-      primary: true,
-      secondary: true,
-      third: true,
-      fourth: true,
-    });
-  };
+  const handleSelectAllServers = () => setServerFilters({
+    primary: true,
+    secondary: true,
+    third: true,
+    fourth: true,
+  });
 
-  const handleClearAllServers = () => {
-    setServerFilters({
-      primary: false,
-      secondary: false,
-      third: false,
-      fourth: false,
-    });
-  };
+  const handleClearAllServers = () => setServerFilters({
+    primary: false,
+    secondary: false,
+    third: false,
+    fourth: false,
+  });
 
   const handleExitLive = async () => {
     try {
-      const response = await fetch('http://172.16.9.98:8000/api/v1/rundown/exitlive', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
+      const response = await fetch('http://172.16.9.98:8000/api/v1/rundown/exitlive', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
       if (response.ok) {
-        console.log('Exit Live command sent successfully');
-        setNotification({
-          show: true,
-          type: 'success',
-          message: 'Exit Live command executed successfully!'
-        });
-        // Auto-hide notification after 3 seconds
-        setTimeout(() => {
-          setNotification({ show: false, type: '', message: '' });
-        }, 3000);
+        setNotification({ show: true, type: 'success', message: 'Exit Live command executed successfully!' });
+        setTimeout(() => setNotification({ show: false, type: '', message: '' }), 3000);
       } else {
-        console.error('Failed to send Exit Live command');
-        setNotification({
-          show: true,
-          type: 'error',
-          message: 'Failed to execute Exit Live command. Please try again.'
-        });
-        // Auto-hide notification after 5 seconds
-        setTimeout(() => {
-          setNotification({ show: false, type: '', message: '' });
-        }, 5000);
+        setNotification({ show: true, type: 'error', message: 'Failed to execute Exit Live command. Please try again.' });
+        setTimeout(() => setNotification({ show: false, type: '', message: '' }), 5000);
       }
     } catch (error) {
-      console.error('Error sending Exit Live command:', error);
-      setNotification({
-        show: true,
-        type: 'error',
-        message: 'Network error occurred. Please check your connection and try again.'
-      });
-      // Auto-hide notification after 5 seconds
-      setTimeout(() => {
-        setNotification({ show: false, type: '', message: '' });
-      }, 5000);
+      setNotification({ show: true, type: 'error', message: 'Network error occurred. Please check your connection and try again.' });
+      setTimeout(() => setNotification({ show: false, type: '', message: '' }), 5000);
     }
   };
-
-  // Resizable width for Meta Table
-  const [metaWidth, setMetaWidth] = useState(showArchive ? 70 : 100);
 
   // --- Move Row Logic ---
   const moveRow = (item, from, to) => {
     const now = new Date();
-  
+
     if (from === 'vistria' && to === 'meta') {
       setMetaData(prev => {
         if (prev.some(row => row.id === item.id)) return prev;
-  
         const updatedData = [...prev];
-  
-        // Update previous last row
         if (updatedData.length > 0) {
           const lastIndex = updatedData.length - 1;
           const lastItem = updatedData[lastIndex];
           const endTime = formatDate(now);
           const duration = calculateDuration(lastItem.startTime, now);
-  
           updatedData[lastIndex] = { ...lastItem, endTime, duration };
-  
-          // Instead of toast here, return both updatedData and lastItem info
           updatedData._lastEnded = { name: lastItem.name, endTime, duration };
         }
-  
-        // Add new row
         updatedData.push({ ...item, startTime: formatDate(now), endTime: null, duration: null });
         return updatedData;
       });
-  
-      // Show toast **after setState**, using the last item from previous state
+
       const prev = metaData;
       if (prev.length > 0) {
         const lastItem = prev[prev.length - 1];
@@ -134,7 +83,6 @@ const Tables = () => {
         const duration = calculateDuration(lastItem.startTime, now);
         toast.info(`"${lastItem.name}" ended at ${endTime} (duration: ${duration})`);
       }
-  
     } else if (from === 'meta') {
       setMetaData(prev => prev.filter(row => row.id !== item.id));
       toast.info(`Removed "${item.name}"`);
@@ -151,11 +99,9 @@ const Tables = () => {
     const startDate = new Date(start);
     const endDate = new Date(end);
     const diff = Math.floor((endDate - startDate) / 1000);
-
     const hours = Math.floor(diff / 3600).toString().padStart(2, '0');
     const minutes = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
     const seconds = (diff % 60).toString().padStart(2, '0');
-
     return `${hours}:${minutes}:${seconds}`;
   };
 
@@ -164,12 +110,7 @@ const Tables = () => {
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    pageSize: 10000000000000,
-    totalRecords: 0,
-    totalPages: 0,
-  });
+  const [pagination, setPagination] = useState({ currentPage: 1, pageSize: 10000000000000, totalRecords: 0, totalPages: 0 });
   const [searchValue, setSearchValue] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'id', direction: 'asc' });
 
@@ -181,204 +122,92 @@ const Tables = () => {
     }));
   }, [metaData]);
 
-  // --- Handlers ---
   const handleSearch = value => setSearchValue(value);
   const handleSort = (field, direction) => setSortConfig({ field, direction });
   const handlePageChange = page => setPagination(prev => ({ ...prev, currentPage: page }));
   const handleTabChange = tab => setActiveTab(tab);
-  const handleRowClick = item => {
-    setSelectedSchedule(item);
-    setShowScheduleModal(true);
-  };
-  const closeScheduleModal = () => {
-    setShowScheduleModal(false);
-    setSelectedSchedule(null);
-  };
+  const handleRowClick = item => { setSelectedSchedule(item); setShowScheduleModal(true); };
+  const closeScheduleModal = () => { setShowScheduleModal(false); setSelectedSchedule(null); };
 
   // --- Resizer Logic ---
+  const metaRef = useRef(null);
+  const metaWidthRef = useRef(300); // initial width
+
   const initResize = (e) => {
     e.preventDefault();
+    document.body.style.userSelect = 'none';
     const startX = e.clientX;
-    const startWidth = metaWidth;
-  
+    const startWidth = metaWidthRef.current;
+
     const onMouseMove = (e) => {
       const delta = e.clientX - startX;
       const newWidth = startWidth + delta;
-  
       if (newWidth >= 300 && newWidth <= window.innerWidth - 200) {
-        setMetaWidth(newWidth);
+        metaWidthRef.current = newWidth;
+        if (metaRef.current) metaRef.current.style.width = `${newWidth}px`;
       }
     };
-  
+
     const stopResize = () => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', stopResize);
+      document.body.style.userSelect = '';
     };
-  
+
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', stopResize);
   };
-  
 
   return (
     <div>
-      <section className="content " style={{ fontSize: '12px', fontWeight: 400 }}>
+      <section className="content" style={{ fontSize: '12px', fontWeight: 400 }}>
         <div className="container-fluid">
-        <div className="row">
+          {/* Server Controls */}
+          <div className="row">
             <div className="col-12">
-              <div
-                className={`card card-outline card-warning ${
-                  isServerFilterCollapsed ? "collapsed-card" : ""
-                }`}
-              >
+              <div className={`card card-outline card-warning ${isServerFilterCollapsed ? 'collapsed-card' : ''}`}>
                 <div className="card-header">
                   <h3 className="card-title" style={{ fontSize: "12px" }}>
-                    <i className="fas fa-server mr-1"></i>
-                    Server Control & Live Management
+                    <i className="fas fa-server mr-1"></i> Server Control & Live Management
                   </h3>
                   <div className="card-tools">
-                    <button
-                      type="button"
-                      className="btn btn-tool"
-                      onClick={() => setIsServerFilterCollapsed(!isServerFilterCollapsed)}
-                    >
-                      <i
-                        className={`fas ${
-                          isServerFilterCollapsed ? "fa-plus" : "fa-minus"
-                        }`}
-                      ></i>
+                    <button type="button" className="btn btn-tool" onClick={() => setIsServerFilterCollapsed(prev => !prev)}>
+                      <i className={`fas ${isServerFilterCollapsed ? 'fa-plus' : 'fa-minus'}`}></i>
                     </button>
                   </div>
                 </div>
-                <div
-                  className="card-body"
-                  style={{ display: isServerFilterCollapsed ? "none" : "block" }}
-                >
+                <div className="card-body" style={{ display: isServerFilterCollapsed ? 'none' : 'block' }}>
                   <div className="row">
-                    <div className="col-md-12">
-                      <div className="form-group mb-2">
-                        {/* <label className="text-rundown font-weight-bold">
-                          <i className="fas fa-server mr-2"></i>
-                          Server Selection
-                        </label> */}
-                        <div className="row mt-3">
-                          <div className="col-md-6 col-lg-3 mb-2">
-                            <div className="custom-control custom-switch">
-                              <input
-                                type="checkbox"
-                                className="custom-control-input"
-                                id="primaryServer"
-                                checked={serverFilters.primary}
-                                onChange={(e) =>
-                                  handleServerFilterChange("primary", e.target.checked)
-                                }
-                              />
-                              <label className="custom-control-label text-rundown" htmlFor="primaryServer">
-                                <div className="d-flex align-items-center">
-                                  <div className={`server-icon-compact mr-2 ${serverFilters.primary ? 'active' : ''}`}>
-                                    <i className="fas fa-server"></i>
-                                  </div>
-                                  <span className="font-weight-bold text-rundown">Primary Server</span>
-                                </div>
-                              </label>
+                    {['primary', 'secondary', 'third', 'fourth'].map((server, i) => (
+                      <div className="col-md-6 col-lg-3 mb-2" key={server}>
+                        <div className="custom-control custom-switch">
+                          <input
+                            type="checkbox"
+                            className="custom-control-input"
+                            id={`${server}Server`}
+                            checked={serverFilters[server]}
+                            onChange={(e) => handleServerFilterChange(server, e.target.checked)}
+                          />
+                          <label className="custom-control-label text-rundown" htmlFor={`${server}Server`}>
+                            <div className="d-flex align-items-center">
+                              <div className={`server-icon-compact mr-2 ${serverFilters[server] ? 'active' : ''}`}>
+                                <i className="fas fa-server"></i>
+                              </div>
+                              <span className="font-weight-bold">{server.charAt(0).toUpperCase() + server.slice(1)} Server</span>
                             </div>
-                          </div>
-                          <div className="col-md-6 col-lg-3 mb-2">
-                            <div className="custom-control custom-switch">
-                              <input
-                                type="checkbox"
-                                className="custom-control-input"
-                                id="secondaryServer"
-                                checked={serverFilters.secondary}
-                                onChange={(e) =>
-                                  handleServerFilterChange("secondary", e.target.checked)
-                                }
-                              />
-                              <label className="custom-control-label text-rundown" htmlFor="secondaryServer">
-                                <div className="d-flex align-items-center">
-                                  <div className={`server-icon-compact mr-2 ${serverFilters.secondary ? 'active' : ''}`}>
-                                    <i className="fas fa-server"></i>
-                                  </div>
-                                  <span className="font-weight-bold">Secondary Server</span>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-                          <div className="col-md-6 col-lg-3 mb-2">
-                            <div className="custom-control custom-switch">
-                              <input
-                                type="checkbox"
-                                className="custom-control-input"
-                                id="thirdServer"
-                                checked={serverFilters.third}
-                                onChange={(e) =>
-                                  handleServerFilterChange("third", e.target.checked)
-                                }
-                              />
-                              <label className="custom-control-label text-rundown" htmlFor="thirdServer">
-                                <div className="d-flex align-items-center">
-                                  <div className={`server-icon-compact mr-2 ${serverFilters.third ? 'active' : ''}`}>
-                                    <i className="fas fa-server"></i>
-                                  </div>
-                                  <span className="font-weight-bold">Third Server</span>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-                          <div className="col-md-6 col-lg-3 mb-2">
-                            <div className="custom-control custom-switch">
-                              <input
-                                type="checkbox"
-                                className="custom-control-input"
-                                id="fourthServer"
-                                checked={serverFilters.fourth}
-                                onChange={(e) =>
-                                  handleServerFilterChange("fourth", e.target.checked)
-                                }
-                              />
-                              <label className="custom-control-label text-rundown" htmlFor="fourthServer">
-                                <div className="d-flex align-items-center">
-                                  <div className={`server-icon-compact mr-2 ${serverFilters.fourth ? 'active' : ''}`}>
-                                    <i className="fas fa-server"></i>
-                                  </div>
-                                  <span className="font-weight-bold">Fourth Server</span>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
+                          </label>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                   <div className="row">
                     <div className="col-md-12">
                       <div className="d-flex justify-content-end align-items-center pt-3 border-top">
                         <div className="btn-group mr-3">
-                          <button
-                            type="button"
-                            className="btn btn-outline-success btn-sm text-rundown mr-2"
-                            onClick={handleSelectAllServers}
-                          >
-                            <i className="fas fa-check-double mr-1"></i>
-                            Select All
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm text-rundown"
-                            onClick={handleClearAllServers}
-                          >
-                            <i className="fas fa-times mr-1"></i>
-                            Clear All
-                          </button>
+                          <button className="btn btn-outline-success btn-sm mr-2" onClick={handleSelectAllServers}><i className="fas fa-check-double mr-1"></i>Select All</button>
+                          <button className="btn btn-outline-secondary btn-sm" onClick={handleClearAllServers}><i className="fas fa-times mr-1"></i>Clear All</button>
                         </div>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm text-rundown compact-exit-btn"
-                          onClick={handleExitLive}
-                        >
-                          <i className="fas fa-sign-out-alt mr-2"></i>
-                          Exit Live
-                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={handleExitLive}><i className="fas fa-sign-out-alt mr-2"></i>Exit Live</button>
                       </div>
                     </div>
                   </div>
@@ -386,39 +215,32 @@ const Tables = () => {
               </div>
             </div>
           </div>
-          <div className="rundown-main-row flex flex-col lg:flex-row"  style={{  width: '100%' }}>
-            {/* --- Meta Table Resizable --- */}
+
+          {/* Tables */}
+          <div className="rundown-main-row flex flex-col lg:flex-row w-full">
+            {/* Meta Table */}
             <div
-              style={{
-                width: showArchive ? `${metaWidth}px` : '100%',
-                minWidth: '300px',
-                position: 'relative',
-              }}
+              ref={metaRef}
+              style={{ width: showArchive ? `${metaWidthRef.current}px` : '100%', minWidth: '300px', position: 'relative' }}
             >
-              {/* Resizer Handle */}
               {showArchive && (
                 <div
                   style={{
-                    width: '5px',
-                    cursor: 'col-resize',
                     position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 10,
-                    backgroundColor: 'transparent',
+                    top: 0, right: 0, bottom: 0,
+                    width: '10px',
+                    cursor: 'col-resize',
+                    zIndex: 9999,
+                    //borderLeft: '1px solid rgba(0,0,0,0.1)',
                   }}
                   onMouseDown={initResize}
                 />
               )}
-
-              <div className="card  rundown-table-card justify-center">
-                <div className="card-header p-2 flex flex-row justify-end">
-                  <button className="btn btn-sm btn-primary" onClick={() => setShowArchive(prev => !prev)}>
-                    {showArchive ? '−' : '+'}
-                  </button>
+              <div className="card rundown-table-card justify-center">
+                <div className="card-header p-2 flex justify-end">
+                  <button className="btn btn-sm btn-primary" onClick={() => setShowArchive(prev => !prev)}>{showArchive ? '−' : '+'}</button>
                 </div>
-                <div className="card-body " style={{ padding: 0, height: 'calc(100vh - 220px)' }}>
+                <div className="card-body" style={{ padding: 0, height: 'calc(100vh - 220px)' }}>
                   <TableMeta
                     data={metaData}
                     onMoveRow={moveRow}
@@ -432,16 +254,16 @@ const Tables = () => {
                     pageSize={pagination.pageSize}
                     loading={loading}
                     searchValue={searchValue}
-                    serverSide={true}
-                    fillHeight={true}
+                    serverSide
+                    fillHeight
                   />
                 </div>
               </div>
             </div>
 
-            {/* --- Archive Table --- */}
+            {/* Archive Table */}
             {showArchive && (
-              <div className="" style={{ flex: 1, minWidth: '200px', marginLeft: '5px' }}>
+              <div style={{ flex: 1, minWidth: '200px', marginLeft: '5px' }}>
                 <TableVistriaArchive data={vistriaData} onMoveRow={moveRow} from="vistria" />
               </div>
             )}
@@ -449,17 +271,7 @@ const Tables = () => {
         </div>
       </section>
 
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick draggable pauseOnHover />
     </div>
   );
 };

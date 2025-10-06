@@ -28,7 +28,7 @@ const MainLayout = ({ children }) => {
     <div className="wrapper ">
       <Header />
       <SideNav onOpenTab={openTab} />
-      <div className=" content-wrapper">
+      <div className=" content-wrapper lg:ml-[500px]">
       {tabs.length > 0 && (
   <div className="flex flex-wrap border-b border-gray-300 bg-gray-100 p-2">
     {tabs.map(tab => (
