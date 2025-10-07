@@ -10,6 +10,7 @@ const VideoMetadata = lazy(() => import('../pages/VideoMetadata'));
 const FolderItems = lazy(() => import('../pages/FolderItems')); 
 const Login = lazy(() => import('../pages/Login')); 
 const SchedulerTable = lazy(() => import('../pages/SchedulerTable')); 
+const SettingsScheduler = lazy(() => import('../pages/SettingsScheduler')); 
 
 
 
@@ -65,6 +66,12 @@ export const routes = [
     name: 'SchedulerTable',
     exact: true,
   },
+  {
+    path: '/settingsscheduler', // Add a new route for the login page
+    element: SettingsScheduler,
+    name: 'SettingsScheduler',
+    exact: true,
+  },
   // Add more routes here as your app grows
 ];
 
@@ -78,6 +85,7 @@ export const ROUTES = {
   FOLDERITEMS: '/folderitem/:id',
   LOGIN: '/login',  
   SCHEDULERTABLE: '/schedulertable',  
+  SETTINGSSCHEDULER: '/settingsscheduler',
   
 };
 

@@ -4,6 +4,7 @@ import { ROUTES } from "../routes";
 import Tables from "../components/Tables";
 import Rundown from "../pages/Rundown";
 import Settings from "../pages/Settings";
+import { SettingsScheduler } from "../pages/SettingsScheduler";
 
 function SideNav({ onOpenTab }) {
     const location = useLocation();
@@ -76,7 +77,7 @@ function SideNav({ onOpenTab }) {
                             <li className="nav-item">
                 <button
                     className="nav-link text-left w-100"
-                    onClick={() => onOpenTab('settings', 'Settings', <Settings />)}
+                    onClick={() => onOpenTab('settingsscheduler', 'SettingsScheduler', <SettingsScheduler />)}
                 >
                     <i className="far fa-circle nav-icon" />
                     <p>Settings</p>
