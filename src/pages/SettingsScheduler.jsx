@@ -30,6 +30,10 @@ export const SettingsScheduler = () => {
       fromTime: item.startTime, // e.g., "14:30:00"
       toTime: item.endTime,     // e.g., "16:30:00"
       adLimit: "",
+      type:"",
+      bpCode:"",
+      rateAgreement:"",
+      timeBand:"",
     });
     setIsEditing(true);
   };
@@ -101,16 +105,58 @@ export const SettingsScheduler = () => {
                 <select
                   className="form-control text-xs"
                   id="type"
-                  value={formData.slot}
-                  onChange={(e) => setFormData({ ...formData, slot: e.target.value })}
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 >
-                  <option value="">Select type</option>
-                  <option value="Slot 1">Slot 1</option>
-                  <option value="Slot 2">Slot 2</option>
-                  <option value="Slot 3">Slot 3</option>
+                  <option value="24 Hour">24 Hour</option>
+                  <option value="PGM Wise">PGM Wise</option>
+                
                 </select>
               </div>
             </div>
+
+            {formData.type === "PGM Wise" && (
+  <>
+    <div className="flex flex-row gap-4">
+      <div className="form-group flex-1">
+        <label htmlFor="bpCode">Bp Code</label>
+        <input
+          type="text"
+          className="form-control text-xs"
+          id="bpCode"
+          placeholder="Ex. SLMN1"
+          value={formData.bpCode}
+          onChange={(e) => setFormData({ ...formData, bpCode: e.target.value })}
+        />
+      </div>
+
+      <div className="form-group flex-1">
+        <label htmlFor="rateAgreement">Rate Agreement</label>
+        <input
+          type="text"
+          className="form-control text-xs"
+          id="rateAgreement"
+          placeholder="Ex. 100001"
+          value={formData.rateAgreement}
+          onChange={(e) => setFormData({ ...formData, rateAgreement: e.target.value })}
+        />
+      </div>
+    </div>
+
+    <div className="form-group flex-1">
+      <label htmlFor="timeBand">Time Band</label>
+      <input
+        type="text"
+        className="form-control text-xs"
+        id="timeBand"
+        placeholder=""
+        value={formData.timeBand}
+        onChange={(e) => setFormData({ ...formData, timeBand: e.target.value })}
+      />
+    </div>
+  </>
+)}
+
 
             <div className="flex flex-row gap-5 mt-2">
               <div className="form-group flex-1">
@@ -141,6 +187,7 @@ export const SettingsScheduler = () => {
                 <label htmlFor="fromTime">From Time</label>
                 <TimePicker
                   onChange={(value) => setFormData({ ...formData, fromTime: value })}
+                  className="form-control text-xs"
                   value={formData.fromTime}
                   format="HH:mm:ss"
                   disableClock={true}
@@ -174,10 +221,32 @@ export const SettingsScheduler = () => {
             </div>
           </div>
 
-          <div className="card-footer mt-2">
-            <button type="submit" className="btn btn-primary w-full">
+          <div className="card-footer flex flex-row">
+            <button type="submit" className="btn btn-primary btn-sm w-full">
               {isEditing ? "Update" : "Add"}
             </button>
+            <button
+    type="button"
+    className="btn btn-secondary w-1/2 ml-1"
+    onClick={() =>
+      {
+        setFormData({
+          adLimit: "",
+          slot: "",
+          fromDate: "",
+          toDate: "",
+          fromTime: "00:00:00",
+          toTime: "00:00:00",
+          type:"",
+          bpCode:"",
+          rateAgreement:"",
+          timeBand:"",
+        });
+        setIsEditing(false); // 👈 this resets the editing state
+      }}
+  >
+    Reset
+  </button>
           </div>
         </form>
       </div>
