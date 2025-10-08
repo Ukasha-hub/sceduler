@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react'
-
+import React, { useEffect, useState } from 'react';
 
 const TableVistriaArchive = ({ data, onMoveRow, from }) => {
-
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredData, setFilteredData] = useState(data);
+  const [selectedSource, setSelectedSource] = useState('Razuna'); // default checked
 
   useEffect(() => {
     // Filter data based on search term
@@ -23,42 +22,37 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
     e.dataTransfer.setData("fromTable", from);
   };
 
-  //const handleDrop = (e) => {
-   // e.preventDefault();
-  //  const rowData = e.dataTransfer.getData("rowData");
-  //  if (!rowData) return; 
-  //  const item = JSON.parse(rowData);
-  //  const fromTable = e.dataTransfer.getData("fromTable");
-
-  //  if (fromTable !== from) {
-  //    onMoveRow(item, fromTable, from);
-  //  }
-  //};
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden"
-    onDragOver={(e) => e.preventDefault()}
-      //onDrop={handleDrop}
-      >
+    <div
+      className="bg-white shadow-md rounded-lg overflow-hidden"
+      onDragOver={(e) => e.preventDefault()}
+    >
       {/* Header */}
-      <div className="flex flex-col items-center justify-between px-4 py-3 border-b">
-        {/* Left: Select + Checkboxes */}
-        <div className="flex items-center space-x-4">
-         
-
-          {/* Two Checkboxes */}
+      <div className="flex flex-col  md:items-center md:justify-between px-4 py-3 border-b space-y-2 md:space-y-0">
+        {/* Checkboxes */}
+        <div className="flex  items-center space-x-4">
           <label className="flex items-center space-x-1 text-xs text-gray-600">
-            <input type="checkbox" className="form-checkbox text-blue-600" />
-            <span>Vistria</span>
+            <input
+              type="checkbox"
+              className="form-checkbox text-blue-600"
+              checked={selectedSource === 'Razuna'}
+              onChange={() => setSelectedSource('Razuna')}
+            />
+            <span>Razuna</span>
           </label>
           <label className="flex items-center space-x-1 text-xs text-gray-600">
-            <input type="checkbox" className="form-checkbox text-blue-600" />
-            <span>Archive</span>
+            <input
+              type="checkbox"
+              className="form-checkbox text-blue-600"
+              checked={selectedSource === 'Vistria'}
+              onChange={() => setSelectedSource('Vistria')}
+            />
+            <span>Vistria</span>
           </label>
         </div>
 
-
-         {/* Search Bar */}
-         <div>
+        {/* Search Bar */}
+        <div>
           <input
             type="text"
             placeholder="Search..."
@@ -67,11 +61,6 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
             className="border rounded px-2 py-1 text-xs w-full md:w-64"
           />
         </div>
-
-        
-
-        {/* Tools */}
-       
       </div>
 
       {/* Table */}
@@ -85,7 +74,7 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
             </tr>
           </thead>
           <tbody>
-          {filteredData.length === 0 ? (
+            {filteredData.length === 0 ? (
               <tr>
                 <td colSpan="3" className="px-4 py-6 text-center text-gray-500 italic">
                   No data
@@ -123,7 +112,7 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
         </table>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TableVistriaArchive
+export default TableVistriaArchive;

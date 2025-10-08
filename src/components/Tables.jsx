@@ -59,31 +59,24 @@ const Tables = () => {
   // --- Move Row Logic ---
   const moveRow = (item, from, to) => {
     const now = new Date();
-
+  
+    // 🟡 Step 1 — Handle drag from vistria → meta
     if (from === 'vistria' && to === 'meta') {
-      setMetaData(prev => {
-        if (prev.some(row => row.id === item.id)) return prev;
-        const updatedData = [...prev];
-        if (updatedData.length > 0) {
-          const lastIndex = updatedData.length - 1;
-          const lastItem = updatedData[lastIndex];
-          const endTime = formatDate(now);
-          const duration = calculateDuration(lastItem.startTime, now);
-          updatedData[lastIndex] = { ...lastItem, endTime, duration };
-          updatedData._lastEnded = { name: lastItem.name, endTime, duration };
-        }
-        updatedData.push({ ...item, startTime: formatDate(now), endTime: null, duration: null });
-        return updatedData;
-      });
-
-      const prev = metaData;
-      if (prev.length > 0) {
-        const lastItem = prev[prev.length - 1];
-        const endTime = formatDate(now);
-        const duration = calculateDuration(lastItem.startTime, now);
-        toast.info(`"${lastItem.name}" ended at ${endTime} (duration: ${duration})`);
+      // ✅ If already exists, skip modal and notify
+      const alreadyExists = metaData.some(row => row.id === item.id);
+      if (alreadyExists) {
+        toast.info(`"${item.name}" is already in the Meta table`);
+        return;
       }
-    } else if (from === 'meta') {
+  
+      // Otherwise, open modal
+      setPendingRow(item);
+      setShowAddDialog(true);
+      return;
+    }
+  
+    // 🟢 Step 2 — Regular removal when dragging out of meta
+    if (from === 'meta') {
       setMetaData(prev => prev.filter(row => row.id !== item.id));
       toast.info(`Removed "${item.name}"`);
     }
@@ -131,7 +124,7 @@ const Tables = () => {
 
   // --- Resizer Logic ---
   const metaRef = useRef(null);
-  const metaWidthRef = useRef(300); // initial width
+  const metaWidthRef = useRef(window.innerWidth > 1024 ? 800 : 310); // initial width
 
   const initResize = (e) => {
     e.preventDefault();
@@ -157,6 +150,56 @@ const Tables = () => {
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', stopResize);
   };
+
+  const [showAddDialog, setShowAddDialog] = useState(false);
+const [pendingRow, setPendingRow] = useState(null);
+const [formInputs, setFormInputs] = useState({ note: '', category: '' });
+
+const handleAddConfirm = () => {
+  const now = new Date();
+  const item = pendingRow;
+  if (!item) return;
+
+  setMetaData(prev => {
+    if (prev.some(row => row.id === item.id)) return prev;
+    const updatedData = [...prev];
+    if (updatedData.length > 0) {
+      const lastIndex = updatedData.length - 1;
+      const lastItem = updatedData[lastIndex];
+      const endTime = formatDate(now);
+      const duration = calculateDuration(lastItem.startTime, now);
+      updatedData[lastIndex] = { ...lastItem, endTime, duration };
+      updatedData._lastEnded = { name: lastItem.name, endTime, duration };
+    }
+    updatedData.push({ ...item, startTime: formatDate(now), endTime: null, duration: null });
+    return updatedData;
+  });
+
+  // Show toast for the previous one
+  if (metaData.length > 0) {
+    const lastItem = metaData[metaData.length - 1];
+    const endTime = formatDate(now);
+    const duration = calculateDuration(lastItem.startTime, now);
+    toast.info(`"${lastItem.name}" ended at ${endTime} (duration: ${duration})`);
+  }
+
+  // Close modal
+  setShowAddDialog(false);
+  setPendingRow(null);
+};
+
+const handleAddClick = (item) => {
+  setFormInputs({
+    ...formInputs,
+    date: item.startDate || "",     // populate date
+    endDate: item.endDate || "",    // populate end date
+    category: "",                   // keep others blank for manual input
+    type: "",
+    check: false,
+  });
+  setPendingRow(item); // store item so Project Name & Asset ID show
+  setShowAddDialog(true);
+};
 
   return (
     <div>
@@ -237,8 +280,22 @@ const Tables = () => {
                 />
               )}
               <div className="card rundown-table-card justify-center">
-                <div className="card-header p-2 flex justify-end">
+                <div className="flex justify-between items-center bg-gray-100 border-b px-3 py-1">
+                    <div className="form-group flex gap-0">
+                     <label>Start Date:</label>
+                      <input
+                        type="date"
+                        className="form-control  text-xs"
+                        placeholder='Start Date'
+                        id="fromDate"
+                        value=""
+                        onChange=""
+                      />
+                  </div>
+                  <div>
                   <button className="btn btn-sm btn-primary" onClick={() => setShowArchive(prev => !prev)}>{showArchive ? '−' : '+'}</button>
+                  </div>
+                  
                 </div>
                 <div className="card-body" style={{ padding: 0, height: 'calc(100vh - 220px)' }}>
                   <TableMeta
@@ -272,6 +329,300 @@ const Tables = () => {
       </section>
 
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick draggable pauseOnHover />
+      {showAddDialog && (
+  <div className="modal fade show " style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.4)',   overflowY: "auto", }}>
+    <div className="modal-dialog" style={{
+        maxWidth: "70%", // Makes modal much wider than default (you can tweak this)
+      }}>
+      <div className="modal-content" style={{
+          maxHeight: "85vh", // Restrict height to viewport
+          overflowY: "auto", // Enable vertical scroll
+           fontSize: "0.85rem"
+        }}>
+        <div className="modal-header">
+          <h5 className="modal-title">Add New Data</h5>
+          <button className="close" onClick={() => setShowAddDialog(false)}>&times;</button>
+        </div>
+        <div className="modal-body p-4">
+          <div className='flex flex-row gap-5'>
+
+          <div className="form-group flex-2">
+            
+            <label>Date</label>
+            <input
+                  type="date"
+                  className="form-control text-xs"
+                  id="fromDate"
+                  value=""
+                  onChange=""
+                />
+          </div>
+          <div className="form-group flex-2">
+            <label>Slug</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={formInputs.category}
+              onChange={(e) => setFormInputs({ ...formInputs, category: e.target.value })}
+            />
+          </div>
+          <div className="form-group  d-flex align-items-center" style={{ gap: "0.5rem" }}>
+  <input
+    type="checkbox"
+    className="form-check-input ml-1"
+    id="exampleCheck"
+    check={formInputs.check || false}
+    onChange={(e) =>
+      setFormInputs({ ...formInputs, check: e.target.check })
+    }
+  />
+  <label className="form-check-label ml-4 mb-0" htmlFor="exampleCheck">
+    Repeat
+  </label>
+</div>
+
+          </div>
+
+          <div className='flex flex-row gap-8'>
+          <div className="form-group flex-1">
+                <label>Type</label>
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="notCOM">not COM</option>
+                
+                </select>
+          </div>
+          <div className="form-group  d-flex align-items-center" style={{ gap: "0.5rem" }}>
+  <input
+    type="checkbox"
+    className="form-check-input"
+    id="exampleCheck"
+    check={formInputs.check || false}
+    onChange={(e) =>
+      setFormInputs({ ...formInputs, check: e.target.check })
+    }
+  />
+  <label className="form-check-label mb-0" htmlFor="exampleCheck">
+    is Commercial
+  </label>
+</div>
+          </div>
+         
+        
+
+          <div className='flex flex-row gap-5'>
+          <div className="form-group flex-1">
+                <label>Type</label>
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+
+          <div className="form-group">
+            <label>Rate Agreement No.</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={formInputs.category}
+              onChange={(e) => setFormInputs({ ...formInputs, category: e.target.value })}
+            />
+          </div>
+          <div className="form-group">
+            <label>Agency</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={formInputs.category}
+              onChange={(e) => setFormInputs({ ...formInputs, category: e.target.value })}
+            />
+          </div>
+          </div>
+
+          
+
+          <div className="form-group">
+            <label>Project Name</label>
+            <input
+  type="text"
+  className="form-control form-control-sm"
+  value={pendingRow?.name || ""}
+  readOnly
+/>
+          </div>
+          <div className="form-group">
+            <label>Asset Id</label>
+            <input
+  type="text"
+  className="form-control form-control-sm"
+  value={pendingRow?.id || ""}
+  readOnly
+/>
+          </div>
+
+          <h1 className='font-bold pb-2'>Time Period</h1>
+
+          <div className='flex flex-row gap-5'>
+          <div className="form-group flex-1">
+                
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="00">00</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          <div className="form-group flex-1">
+                
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          <div className="form-group flex-1">
+              
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          <div className="form-group flex-1">
+              
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          </div>
+          
+          <h1 className=' font-bold pb-2'>Duration</h1>
+          <div className='flex flex-row gap-5'>
+          <div className="form-group flex-1">
+               
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          <div className="form-group flex-1">
+               
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          <div className="form-group flex-1">
+               
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          <div className="form-group flex-1">
+            
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">COM</option>
+                  <option value="COM">COM</option>
+                
+                </select>
+          </div>
+          </div>
+        
+          <div className='flex flex-row gap-10'>
+          <div className="form-group flex-1">
+            <label>End Date</label>
+            <input
+                  type="date"
+                  className="form-control text-xs"
+                  id="fromDate"
+                  value=""
+                  onChange=""
+                />
+          </div>
+          <div className="form-group  d-flex align-items-center" style={{ gap: "0.5rem" }}>
+  <input
+    type="checkbox"
+    className="form-check-input"
+    id="exampleCheck"
+    check={formInputs.check || false}
+    onChange={(e) =>
+      setFormInputs({ ...formInputs, check: e.target.check })
+    }
+  />
+  <label className="form-check-label mb-0" htmlFor="exampleCheck">
+    Bonus
+  </label>
+</div>
+          <div className="form-group flex-1">
+                <label>Select Spot</label>
+                <select
+                  className="form-control text-xs form-control-sm"
+                  id="type"
+               
+                >
+                  <option value="COM">Just Before</option>
+                  <option value="COM">Super</option>
+                
+                </select>
+          </div>
+          </div>
+         
+          
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={() => setShowAddDialog(false)}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleAddConfirm}>Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
