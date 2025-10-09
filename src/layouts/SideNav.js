@@ -93,7 +93,7 @@ function SideNav({ onOpenTab }) {
             <li className={`nav-item ${settingsOpen ? "menu-open" : ""}`}>
               <button
                 className="nav-link text-left w-100"
-                onClick={() => setSettingsOpen(!settingsOpen)}
+                onClick={() => setSettingsOpen(settingsOpen)}
               >
                 <i className="nav-icon fas fa-cogs text-white" />
                 <p className="text-white ">
@@ -133,11 +133,11 @@ function SideNav({ onOpenTab }) {
                   <button
                     className="nav-link text-left w-100"
                     onClick={() =>
-                      onOpenTab("generalsettings", "General Settings", <div>General Settings Page</div>)
+                      onOpenTab("generalsettings", "Slug Setup", <div>General Settings Page</div>)
                     }
                   >
                     <i className="far fa-circle nav-icon text-white" />
-                    <p className="text-white">General Settings</p>
+                    <p className="text-white">Slug Setup</p>
                   </button>
                 </li>
               </ul>

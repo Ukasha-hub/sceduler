@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import UpdateSchedulerModal from "./UpdateSchedulerModal";
 
 const TableMeta = ( {data, onMoveRow, from, 
   columns, 
@@ -15,12 +16,34 @@ const TableMeta = ( {data, onMoveRow, from,
   getRowClassName, // New prop for custom row classes
   fillHeight = true  }) => {
 
-  const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+    const [localSearchValue, setLocalSearchValue] = useState(searchValue);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [containerHeight, setContainerHeight] = useState('auto');
     const containerRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredData, setFilteredData] = useState(data);
+
+const [contextMenu, setContextMenu] = useState(null);
+const [selectedRow, setSelectedRow] = useState(null);
+
+
+const [showUpdate, setShowUpdate] = useState(false);
+
+const handleUpdateClick = (row) => {
+  setSelectedRow(row);
+  setShowUpdate(true);
+};
+
+const [formInputs, setFormInputs] = useState({
+  date: "",
+  category: "",
+  check: false,
+  type: "",
+  isCommercial: false,
+  endDate: "",
+  bonus: false,
+});
+
 
   useEffect(() => {
       // Filter data based on search term
@@ -226,6 +249,8 @@ const TableMeta = ( {data, onMoveRow, from,
       }
       return item[column.key];
     };
+
+
   
     return (
       <div 
@@ -287,9 +312,17 @@ const TableMeta = ( {data, onMoveRow, from,
       ) : (
         filteredData.map((row) => (
           <tr
-            key={row.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, row)}
+          key={row.id}
+          draggable
+          onDragStart={(e) => handleDragStart(e, row)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setSelectedRow(row);
+            setContextMenu({
+              mouseX: e.clientX,
+              mouseY: e.clientY,
+            });
+          }}
           >
             <td className="px-4 py-3 w-[60px] text-blue-600 font-medium">{row.id}</td>
             <td className="px-4 py-3 w-[100px]">{row.startTime}</td>
@@ -303,6 +336,39 @@ const TableMeta = ( {data, onMoveRow, from,
       )}
     </tbody>
   </table>
+  {contextMenu && (
+  <div
+    className="fixed bg-white border rounded shadow-md z-50 text-sm"
+    style={{
+      top: contextMenu.mouseY,
+      left: contextMenu.mouseX,
+    }}
+    onMouseLeave={() => setContextMenu(null)}
+  >
+    <button
+      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+      onClick={() => {
+        setShowUpdate(true);
+        setContextMenu(null);
+      }}
+    >
+      Update
+    </button>
+  </div>
+)}
+{showUpdate && (
+  <UpdateSchedulerModal
+    show={showUpdate}
+    selectedRow={selectedRow}
+    formInputs={formInputs}
+    setFormInputs={setFormInputs}
+    onClose={() => setShowUpdate(false)}
+    onConfirm={(updatedData) => {
+      console.log("Updated data:", updatedData);
+      setShowUpdate(false);
+    }}
+  />
+)}
 
 </div>
 
