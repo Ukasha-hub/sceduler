@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import tableData from "../services/TableData";
 import TimePicker from "react-time-picker";
 import 'react-time-picker/dist/TimePicker.css';
@@ -12,36 +12,91 @@ export const SettingsScheduler = () => {
     toDate: "",
     fromTime: "00:00:00",
     toTime: "00:00:00",
+    type: "",
+    bpCode: "",
+    rateAgreement: "",
+    timeBand: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [tableDataState, setTableDataState] = useState(tableData);
+  const [selectedRows, setSelectedRows] = useState([]);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rowId: null });
+
+  const tableRef = useRef();
+
+  // Hide context menu on click outside
+  useEffect(() => {
+    const handleClick = () => setContextMenu({ ...contextMenu, visible: false });
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, [contextMenu]);
+
+  const handleRowClick = (item, e) => {
+    if (!selectedRows.includes(item.id)) {
+      setSelectedRows([...selectedRows, item.id]);
+    } else if (e.type === "click") {
+      setSelectedRows(selectedRows.filter((id) => id !== item.id));
+    }
+
+    setFormData({
+      slot: item.size,
+      fromDate: item.startDate,
+      toDate: item.endDate,
+      fromTime: item.startTime,
+      toTime: item.endTime,
+      adLimit: "",
+      type: "",
+      bpCode: "",
+      rateAgreement: "",
+      timeBand: "",
+    });
+    setIsEditing(true);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedRows.length === tableDataState.length) {
+      setSelectedRows([]);
+    } else {
+      setSelectedRows(tableDataState.map((row) => row.id));
+    }
+  };
+
+  const handleRightClick = (e, rowId) => {
+    e.preventDefault();
+    
+    // Get the table's bounding rectangle
+    const tableRect = tableRef.current.getBoundingClientRect();
+  
+    setContextMenu({
+      visible: true,
+      x: e.clientX - tableRect.left, // relative to table
+      y: e.clientY - tableRect.top,
+      rowId: rowId,
+    });
+  
+    if (!selectedRows.includes(rowId)) {
+      setSelectedRows([rowId]);
+    }
+  };
+
+  const handleDeleteRows = () => {
+    setTableDataState(tableDataState.filter((row) => !selectedRows.includes(row.id)));
+    setSelectedRows([]);
+    setContextMenu({ ...contextMenu, visible: false });
+    alert("Row(s) deleted!"); // replace with toast if needed
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Submitted:", formData);
   };
-
-  const handleRowClick = (item) => {
-    // Keep full 24-hour format with seconds
-    setFormData({
-      slot: item.size,
-      fromDate: item.startDate,
-      toDate: item.endDate,
-      fromTime: item.startTime, // e.g., "14:30:00"
-      toTime: item.endTime,     // e.g., "16:30:00"
-      adLimit: "",
-      type:"",
-      bpCode:"",
-      rateAgreement:"",
-      timeBand:"",
-    });
-    setIsEditing(true);
-  };
-
   return (
     <div className="flex lg:flex-row text-xs flex-col gap-2 justify-center">
       {/* TABLE SECTION */}
-      <div className="row mt-4 w-full md:w-3/5">
+      <div className="row mt-4 w-full md:w-3/5" ref={tableRef}>
         <div className="col-12">
           <div className="card">
             <div className="card-header">
@@ -52,6 +107,13 @@ export const SettingsScheduler = () => {
               <table className="table table-hover text-nowrap">
                 <thead>
                   <tr>
+                    <th>
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.length === tableDataState.length && tableDataState.length > 0}
+                        onChange={handleSelectAll}
+                      />
+                    </th>
                     <th>ID</th>
                     <th>Name</th>
                     <th>Slot</th>
@@ -60,8 +122,29 @@ export const SettingsScheduler = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {tableData.map((item) => (
-                    <tr key={item.id} onClick={() => handleRowClick(item)} className="cursor-pointer hover:bg-gray-100">
+                  {tableDataState.map((item) => (
+                    <tr
+                      key={item.id}
+                      onClick={(e) => handleRowClick(item, e)}
+                      onContextMenu={(e) => handleRightClick(e, item.id)}
+                      className={`cursor-pointer hover:bg-gray-100 ${
+                        selectedRows.includes(item.id) ? "bg-gray-200" : ""
+                      }`}
+                    >
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(item.id)}
+                          onChange={() => {
+                            if (selectedRows.includes(item.id)) {
+                              setSelectedRows(selectedRows.filter((id) => id !== item.id));
+                            } else {
+                              setSelectedRows([...selectedRows, item.id]);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
                       <td>{item.id}</td>
                       <td>{item.name}</td>
                       <td>{item.size}</td>
@@ -71,6 +154,30 @@ export const SettingsScheduler = () => {
                   ))}
                 </tbody>
               </table>
+
+              {/* Context Menu */}
+              {contextMenu.visible && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: contextMenu.y,
+                    left: contextMenu.x,
+                    backgroundColor: "white",
+                    border: "1px solid #ccc",
+                    boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+                    zIndex: 1000,
+                  }}
+                >
+                  <ul className="p-1 m-0 list-none">
+                    <li
+                      className="px-4 py-1 hover:bg-red-100 cursor-pointer text-red-600"
+                      onClick={handleDeleteRows}
+                    >
+                      Delete
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -89,7 +196,6 @@ export const SettingsScheduler = () => {
                 <label>Slot</label>
                 <select
                   className="form-control text-xs"
-                  id="slot"
                   value={formData.slot}
                   onChange={(e) => setFormData({ ...formData, slot: e.target.value })}
                 >
@@ -104,78 +210,68 @@ export const SettingsScheduler = () => {
                 <label>Type</label>
                 <select
                   className="form-control text-xs"
-                  id="type"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 >
+                  <option value="">Select type</option>
                   <option value="24 Hour">24 Hour</option>
                   <option value="PGM Wise">PGM Wise</option>
-                
                 </select>
               </div>
             </div>
 
             {formData.type === "PGM Wise" && (
-  <>
-    <div className="flex flex-row gap-4">
-      <div className="form-group flex-1">
-        <label htmlFor="bpCode">Bp Code</label>
-        <input
-          type="text"
-          className="form-control text-xs"
-          id="bpCode"
-          placeholder="Ex. SLMN1"
-          value={formData.bpCode}
-          onChange={(e) => setFormData({ ...formData, bpCode: e.target.value })}
-        />
-      </div>
+              <>
+                <div className="flex flex-row gap-4 mt-2">
+                  <div className="form-group flex-1">
+                    <label>Bp Code</label>
+                    <input
+                      type="text"
+                      className="form-control text-xs"
+                      value={formData.bpCode}
+                      onChange={(e) => setFormData({ ...formData, bpCode: e.target.value })}
+                    />
+                  </div>
 
-      <div className="form-group flex-1">
-        <label htmlFor="rateAgreement">Rate Agreement</label>
-        <input
-          type="text"
-          className="form-control text-xs"
-          id="rateAgreement"
-          placeholder="Ex. 100001"
-          value={formData.rateAgreement}
-          onChange={(e) => setFormData({ ...formData, rateAgreement: e.target.value })}
-        />
-      </div>
-    </div>
+                  <div className="form-group flex-1">
+                    <label>Rate Agreement</label>
+                    <input
+                      type="text"
+                      className="form-control text-xs"
+                      value={formData.rateAgreement}
+                      onChange={(e) => setFormData({ ...formData, rateAgreement: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-    <div className="form-group flex-1">
-      <label htmlFor="timeBand">Time Band</label>
-      <input
-        type="text"
-        className="form-control text-xs"
-        id="timeBand"
-        placeholder=""
-        value={formData.timeBand}
-        onChange={(e) => setFormData({ ...formData, timeBand: e.target.value })}
-      />
-    </div>
-  </>
-)}
-
+                <div className="form-group mt-2">
+                  <label>Time Band</label>
+                  <input
+                    type="text"
+                    className="form-control text-xs"
+                    value={formData.timeBand}
+                    onChange={(e) => setFormData({ ...formData, timeBand: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
 
             <div className="flex flex-row gap-5 mt-2">
               <div className="form-group flex-1">
-                <label htmlFor="fromDate">From Date</label>
+                <label>From Date</label>
                 <input
                   type="date"
                   className="form-control text-xs"
-                  id="fromDate"
                   value={formData.fromDate}
                   onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })}
                 />
               </div>
 
               <div className="form-group flex-1">
-                <label htmlFor="toDate">To Date</label>
+                <label>To Date</label>
                 <input
                   type="date"
                   className="form-control text-xs"
-                  id="toDate"
                   value={formData.toDate}
                   onChange={(e) => setFormData({ ...formData, toDate: e.target.value })}
                 />
@@ -184,7 +280,7 @@ export const SettingsScheduler = () => {
 
             <div className="flex flex-row gap-5 mt-2">
               <div className="form-group flex-1">
-                <label htmlFor="fromTime">From Time</label>
+                <label>From Time</label>
                 <TimePicker
                   onChange={(value) => setFormData({ ...formData, fromTime: value })}
                   className="form-control text-xs"
@@ -196,10 +292,10 @@ export const SettingsScheduler = () => {
               </div>
 
               <div className="form-group flex-1">
-                <label htmlFor="toTime">To Time</label>
+                <label>To Time</label>
                 <TimePicker
                   onChange={(value) => setFormData({ ...formData, toTime: value })}
-                   className="form-control text-xs"
+                  className="form-control text-xs"
                   value={formData.toTime}
                   format="HH:mm:ss"
                   disableClock={true}
@@ -209,44 +305,40 @@ export const SettingsScheduler = () => {
             </div>
 
             <div className="form-group mt-2">
-              <label htmlFor="adLimit">Ad Limit</label>
+              <label>Ad Limit</label>
               <input
                 type="text"
                 className="form-control text-xs"
-                id="adLimit"
-                placeholder="Enter limit"
                 value={formData.adLimit}
                 onChange={(e) => setFormData({ ...formData, adLimit: e.target.value })}
               />
             </div>
           </div>
 
-          <div className="card-footer flex flex-row">
+          <div className="card-footer flex flex-row gap-2">
             <button type="submit" className="btn btn-primary btn-sm w-full">
               {isEditing ? "Update" : "Add"}
             </button>
             <button
-    type="button"
-    className="btn btn-secondary w-1/2 ml-1"
-    onClick={() =>
-      {
-        setFormData({
-          adLimit: "",
-          slot: "",
-          fromDate: "",
-          toDate: "",
-          fromTime: "00:00:00",
-          toTime: "00:00:00",
-          type:"",
-          bpCode:"",
-          rateAgreement:"",
-          timeBand:"",
-        });
-        setIsEditing(false); // 👈 this resets the editing state
-      }}
-  >
-    Reset
-  </button>
+              type="button"
+              className="btn btn-secondary w-1/2 ml-1"
+              onClick={() =>
+                setFormData({
+                  adLimit: "",
+                  slot: "",
+                  fromDate: "",
+                  toDate: "",
+                  fromTime: "00:00:00",
+                  toTime: "00:00:00",
+                  type:"",
+                  bpCode:"",
+                  rateAgreement:"",
+                  timeBand:"",
+                })
+              }
+            >
+              Reset
+            </button>
           </div>
         </form>
       </div>

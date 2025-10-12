@@ -6,8 +6,8 @@ const Home = lazy(() => import('../pages/Home'));
 const DashboardV2 = lazy(() => import('../pages/DashboardV2'));
 const Rundown = lazy(() => import('../pages/Rundown'));
 const Settings = lazy(() => import('../pages/Settings'));
-const VideoMetadata = lazy(() => import('../pages/VideoMetadata')); 
-const FolderItems = lazy(() => import('../pages/FolderItems')); 
+
+
 const Login = lazy(() => import('../pages/Login')); 
 const SchedulerTable = lazy(() => import('../pages/SchedulerTable')); 
 const SettingsScheduler = lazy(() => import('../pages/SettingsScheduler')); 
@@ -41,18 +41,8 @@ export const routes = [
     name: 'Settings',
     exact: true,
   },
-  {
-    path: '/metadata/:id',
-    element: VideoMetadata,
-    name: 'VideoMetadata',
-    exact: true,
-  },
-  {
-    path: '/folderitem/:id',
-    element: FolderItems,
-    name: 'FolderItems',
-    exact: true,
-  },
+ 
+ 
   {
     path: '/login', // Add a new route for the login page
     element: Login,
@@ -82,7 +72,7 @@ export const ROUTES = {
   RUNDOWN: '/rundown',
   SETTINGS: '/settings',
   METADATA: '/metadata/:id',
-  FOLDERITEMS: '/folderitem/:id',
+ 
   LOGIN: '/login',  
   SCHEDULERTABLE: '/schedulertable',  
   SETTINGSSCHEDULER: '/settingsscheduler',

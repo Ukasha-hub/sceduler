@@ -4,6 +4,7 @@ import { ROUTES } from "../routes";
 import Tables from "../components/Tables";
 import Rundown from "../pages/Rundown";
 import { SettingsScheduler } from "../pages/SettingsScheduler";
+import { SlugSetup } from "../pages/SlugSetup";
 
 function SideNav({ onOpenTab }) {
   const location = useLocation();
@@ -16,9 +17,9 @@ function SideNav({ onOpenTab }) {
       {/* Brand Logo */}
       <Link to={ROUTES.HOME} className="brand-link">
         <img
-          src="dist/img/AdminLTELogo.png"
+          src="dist/img/sysnova.png"
           alt="AdminLTE Logo"
-          className="brand-image img-circle elevation-3"
+          className="brand-image img-circle elevation-3 w-30 h-60"
           style={{ opacity: ".8" }}
         />
         <span className="brand-text font-weight-light text-rundown">Sysnova</span>
@@ -26,8 +27,7 @@ function SideNav({ onOpenTab }) {
 
       {/* Sidebar */}
       <div className="sidebar">
-        {/* User Panel */}
-        <div className="user-panel mt-3 pb-3 mb-3 d-flex">
+        {/*  <div className="user-panel mt-3 pb-3 mb-3 d-flex">
           <div className="image">
             <img
               src="dist/img/user2-160x160.jpg"
@@ -40,7 +40,8 @@ function SideNav({ onOpenTab }) {
               Mr. User
             </a>
           </div>
-        </div>
+        </div> */}
+       
 
         {/* Search */}
         <div className="form-inline">
@@ -133,7 +134,7 @@ function SideNav({ onOpenTab }) {
                   <button
                     className="nav-link text-left w-100"
                     onClick={() =>
-                      onOpenTab("generalsettings", "Slug Setup", <div>General Settings Page</div>)
+                      onOpenTab("generalsettings", "Slug Setup", <SlugSetup></SlugSetup>)
                     }
                   >
                     <i className="far fa-circle nav-icon text-white" />

@@ -52,15 +52,25 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
         </div>
 
         {/* Search Bar */}
-        <div>
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border rounded px-2 py-1 text-xs w-full md:w-64"
-          />
-        </div>
+        <div className="flex flex-col justify-center md:flex-row md:items-center gap-2 w-full">
+            <select
+              className="border rounded px-1 py-0.5 text-[10px] w-full md:w-32"
+              id="slot"
+            >
+              <option value="">Select slot</option>
+              <option value="Slot 1">Slot 1</option>
+              <option value="Slot 2">Slot 2</option>
+              <option value="Slot 3">Slot 3</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border rounded px-1 py-0.5 text-[10px] w-full md:w-40"
+            />
+          </div>
       </div>
 
       {/* Table */}
@@ -69,7 +79,8 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
           <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
             <tr>
               <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Size</th>
+              <th className="px-4 py-3">Asset ID</th>
+              <th className="px-4 py-3">Duration</th>
               <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
@@ -93,7 +104,8 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
                   <td className="px-4 py-3 text-blue-600 font-medium">
                     <a href="#">{row.name}</a>
                   </td>
-                  <td className="px-4 py-3">{row.size}</td>
+                  <td className="px-4 py-3">{row.id}</td>
+                  <td className="px-4 py-3">{row.duration}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-1 text-xs font-semibold rounded ${

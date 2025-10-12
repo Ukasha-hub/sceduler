@@ -1,36 +1,15 @@
 import React from 'react';
-import FolderCard from '../../components/FolderCard'
 
-
-import MoveFileFolderModal from '../../components/Modal/MoveFileFolderModal'
-
-import DeleteFileFolderModal from '../../components/Modal/DeleteFileFolderModal'
-import useFileFolderManager from '../../hooks/useFileFolderManager'
-import { Link, useLocation } from 'react-router-dom'
-
-
-
-import RenameFolderModal from '../../components/Modal/RenameFolderModal'
-import { useState } from 'react'
-import TopbarInsideTabs from '../../components/TopbarInsideTabs'
-import Breadcrumb from '../../components/Breadcrumb';
-import Tabs from '../../components/Tabs';
-import PageHeader from '../../components/PageHeader';
-import AddFileModal from '../../components/Modal/AddFileModal';
-import ContextMenu from '../../components/ContextMenu';
 
 function Home() {
-  const {createFolderInHomepage, handleDrop,handleRenameHomePage,itemToRename, setItemToRename, showRenameModal, setShowRenameModal, handleSelectAll, pasteClipboardItems, clipboard, setClipboard, itemsPerPage,handleItemsPerPageChange ,handleSort,sortBy, sortOrder,currentPage, setCurrentPage, totalPages,currentItems,  contextMenu, setContextMenu, showMoveModal, setShowMoveModal, showCopyModal, setShowCopyModal, 
-    itemToCopy, setItemToCopy, itemToMove, setItemToMove, selectedItems, setSelectedItems, showDeleteModal, setShowDeleteModal, 
-    itemToDelete, setItemToDelete, cards, setCards,  topLevelItems, handleSelectItem, navigate, handleRightClick, handleOpenMetadata,
-    handleOpenFileItems, folders, activeTab, setActiveTab,  confirmDelete, handleDelete, handleMove, cancelDelete, handleCopy} = useFileFolderManager();
 
-    const location = useLocation();
-    const pathnames = location.pathname.split('/').filter(x => x);
+
+    
+   
 
     
 
-    const [showAddFileModal, setShowAddFileModal] = useState(false);
+    
 
   return (
     <div>

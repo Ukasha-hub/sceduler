@@ -125,7 +125,7 @@ const Tables = () => {
 
   // --- Resizer Logic ---
   const metaRef = useRef(null);
-  const metaWidthRef = useRef(window.innerWidth > 1024 ? 800 : 310); // initial width
+  const metaWidthRef = useRef(window.innerWidth > 1024 ? 710 : 310); // initial width
 
   const initResize = (e) => {
     e.preventDefault();
@@ -159,32 +159,53 @@ const [formInputs, setFormInputs] = useState({ note: '', category: '' });
 const handleAddConfirm = () => {
   const now = new Date();
   const item = pendingRow;
-  if (!item) return;
 
   setMetaData(prev => {
-    if (prev.some(row => row.id === item.id)) return prev;
     const updatedData = [...prev];
-    if (updatedData.length > 0) {
-      const lastIndex = updatedData.length - 1;
-      const lastItem = updatedData[lastIndex];
-      const endTime = formatDate(now);
-      const duration = calculateDuration(lastItem.startTime, now);
-      updatedData[lastIndex] = { ...lastItem, endTime, duration };
-      updatedData._lastEnded = { name: lastItem.name, endTime, duration };
+
+    if (!item) {
+      // Add a dummy row if no pendingRow
+      const dummyRow = {
+        id: Date.now(),
+        name: "Untitled",
+        startTime: formatDate(now),
+        endTime: null,
+        duration: null,
+        note: "",
+        category: "",
+        type: "",
+        check: false,
+      };
+      updatedData.push(dummyRow);
+    } else {
+      // Update last item's endTime/duration if it exists
+      if (updatedData.length > 0) {
+        const lastIndex = updatedData.length - 1;
+        const lastItem = updatedData[lastIndex];
+        const endTime = formatDate(now);
+        const duration = calculateDuration(lastItem.startTime, now);
+        updatedData[lastIndex] = { ...lastItem, endTime, duration };
+      }
+
+      // Add the new pendingRow item
+      updatedData.push({
+        ...item,
+        startTime: formatDate(now),
+        endTime: null,
+        duration: null,
+        note: item.note || "",
+        category: item.category || "",
+        type: item.type || "",
+        check: item.check || false,
+      });
     }
-    updatedData.push({ ...item, startTime: formatDate(now), endTime: null, duration: null });
+
+    // ✅ Log safely inside the updater
+    console.log("Updated metaData:", updatedData);
+
     return updatedData;
   });
 
-  // Show toast for the previous one
-  if (metaData.length > 0) {
-    const lastItem = metaData[metaData.length - 1];
-    const endTime = formatDate(now);
-    const duration = calculateDuration(lastItem.startTime, now);
-    toast.info(`"${lastItem.name}" ended at ${endTime} (duration: ${duration})`);
-  }
-
-  // Close modal
   setShowAddDialog(false);
   setPendingRow(null);
 };
@@ -200,6 +221,38 @@ const handleAddClick = (item) => {
   });
   setPendingRow(item); // store item so Project Name & Asset ID show
   setShowAddDialog(true);
+};
+
+// --- Helper to download CSV ---
+const downloadCSV = (data = metaData) => {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    toast.info("No data available to download.");
+    return;
+  }
+
+  const headers = Object.keys(data[0]);
+  if (headers.length === 0) return;
+
+  const csvRows = [];
+  csvRows.push(headers.join(','));
+
+  data.forEach(row => {
+    const values = headers.map(header => {
+      let val = row[header] ?? '';
+      if (typeof val === 'string') val = `"${val.replace(/"/g, '""')}"`;
+      return val;
+    });
+    csvRows.push(values.join(','));
+  });
+
+  const csvString = csvRows.join('\n');
+  const blob = new Blob([csvString], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `meta_table_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 };
 
   return (
@@ -282,17 +335,24 @@ const handleAddClick = (item) => {
               )}
               <div className="card rundown-table-card justify-center">
                 <div className="flex justify-between items-center bg-gray-100 border-b px-3 py-1">
+                  <div className='flex flex-row justify-start gap-3'>
                     <div className="form-group flex gap-0">
-                     <label>Start Date:</label>
-                      <input
-                        type="date"
-                        className="form-control  text-xs"
-                        placeholder='Start Date'
-                        id="fromDate"
-                        value=""
-                        onChange=""
-                      />
+                      <label>Start Date:</label>
+                        <input
+                          type="date"
+                          className="form-control  text-xs"
+                          placeholder='Start Date'
+                          id="fromDate"
+                          value=""
+                          onChange=""
+                        />
+                    </div>
+                   <button className="btn btn-sm btn-secondary ml-2" onClick={downloadCSV}>
+  CSV File
+</button>
+                    <button>pdf file</button>
                   </div>
+                   
                   <div>
                   <button className="btn btn-sm btn-primary" onClick={() => setShowArchive(prev => !prev)}>{showArchive ? '−' : '+'}</button>
                   </div>

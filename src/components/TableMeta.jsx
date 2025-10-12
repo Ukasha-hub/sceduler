@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import UpdateSchedulerModal from "./UpdateSchedulerModal";
+import { ToastContainer, toast } from 'react-toastify';
 
 const TableMeta = ( {data, onMoveRow, from, 
   columns, 
@@ -29,6 +30,11 @@ const [selectedRow, setSelectedRow] = useState(null);
 
 const [showUpdate, setShowUpdate] = useState(false);
 
+const [selectedRows, setSelectedRows] = useState([]);
+const [clipboard, setClipboard] = useState(null);
+
+const [blankContextMenu, setBlankContextMenu] = useState(null);
+
 const handleUpdateClick = (row) => {
   setSelectedRow(row);
   setShowUpdate(true);
@@ -45,17 +51,24 @@ const [formInputs, setFormInputs] = useState({
 });
 
 
-  useEffect(() => {
-      // Filter data based on search term
-      setFilteredData(
-        data.filter(
-          (row) =>
-            row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            row.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            row.status.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-    }, [searchTerm, data]);  
+
+
+useEffect(() => {
+  setFilteredData(prevFiltered => {
+    // Keep local rows that aren't in `data` yet (e.g., copied rows)
+    const localOnlyRows = prevFiltered.filter(row => !data.some(d => d.id === row.id));
+    // Merge parent `data` with local-only rows
+    const merged = [...data, ...localOnlyRows];
+
+    // Then apply search filter
+    return merged.filter(
+      row =>
+        row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.status.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+}, [searchTerm, data]);
 
   const handleDragStart = (e, item) => {
     e.dataTransfer.setData("rowData", JSON.stringify(item));
@@ -251,11 +264,43 @@ const [formInputs, setFormInputs] = useState({
     };
 
 
+    // ✅ Add this to your component state:
+
+
+// ✅ Function to toggle individual row selection
+const handleRowSelect = (id) => {
+  setSelectedRows((prev) =>
+    prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+  );
+};
+
+// ✅ Function to toggle all
+const handleSelectAll = () => {
+  if (selectedRows.length === filteredData.length) {
+    setSelectedRows([]);
+  } else {
+    setSelectedRows(filteredData.map((row) => row.id));
+  }
+
+}
+
+const handleCopyRows = () => {
+  const newRows = selectedRows.map(id => {
+    const row = filteredData.find(r => r.id === id);
+    return { ...row, id: Date.now() + Math.random(), name: `${row.name} (Copy)` };
+  });
+  setFilteredData(prev => [...prev, ...newRows]);
+  setSelectedRows([]);
+  setContextMenu(null);
+};
+
+
+
   
     return (
       <div 
         ref={containerRef}
-        className="datatable-container w-full" 
+        className="datatable-container w-full h-full flex flex-col" 
         style={{
           height: fillHeight ? containerHeight : 'auto'
         }}
@@ -290,72 +335,166 @@ const [formInputs, setFormInputs] = useState({
         {/* Table Body with Fixed Height and Scroll */}
         <div className="datatable-body overflow-x-auto">
 
-  <table className="datatable-table table table-hover w-full min-w-max">
-    <thead className="bg-gray-100">
-      <tr>
-        <th className="px-4 py-3 w-[60px]">ID</th>
-        <th className="px-4 py-3 w-[100px]">Start Time</th>
-        <th className="px-4 py-3 w-[100px]">End Time</th>
-        <th className="px-4 py-3 w-[200px]">Programme Name</th>
-        <th className="px-4 py-3 w-[100px]">Type</th>
-        <th className="px-4 py-3 w-[100px]">Duration</th>
-        <th className="px-4 py-3 w-[60px]">L/P/D</th>
+        <table
+  className="datatable-table table table-hover w-full min-w-max"
+  onContextMenu={(e) => {
+    e.preventDefault();
+
+    // If clicked on any row or cell → do nothing
+    if (e.target.closest("tr") || e.target.closest("td")) return;
+
+    setContextMenu(null);
+  
+  }}>
+
+<thead className="bg-gray-100">
+  <tr>
+    <th className=" py-3 w-[10px]">
+      {/* Optional: Master Checkbox */}
+      <label className="flex items-center justify-center gap-1">
+    <input
+      type="checkbox"
+      checked={selectedRows.length === filteredData.length && filteredData.length > 0}
+      onChange={handleSelectAll}
+      className="cursor-pointer"
+    />
+    All
+  </label>
+    </th>
+    <th className="px-4 py-3 w-[20px]">ID</th>
+    <th className="px-4 py-3 w-[80px]">Start Time</th>
+    <th className="px-4 py-3 w-[80px]">End Time</th>
+    <th className="px-4 py-3 w-[150px]">Programme Name</th>
+    <th className="px-4 py-3 w-[80px]">Type</th>
+    <th className="px-4 py-3 w-[80px]">Duration</th>
+    <th className="px-4 py-3 w-[20px]">L/P/D</th>
+  </tr>
+</thead>
+<tbody>
+  {filteredData.length === 0 ? (
+    <tr>
+      <td colSpan="7" className="px-4 py-6 text-center text-gray-500 italic">
+        No data
+      </td>
+    </tr>
+  ) : (
+    filteredData.map((row) => (
+      <tr
+        key={row.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, row)}
+        onClick={(e) => {
+          // Prevent row selection if right-clicked
+          if (e.button === 2) return;
+          handleRowSelect(row.id);
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          if (!selectedRows.includes(row.id)) {
+            setSelectedRows([row.id]); // select only this row
+          }
+          setSelectedRow(row);
+          setContextMenu({ mouseX: e.clientX, mouseY: e.clientY });
+        }}
+        className={selectedRows.includes(row.id) ? "bg-gray-100 cursor-pointer" : "cursor-pointer"}
+      >
+        <td className="px-2 w-[10px]">
+          <input
+            type="checkbox"
+            checked={selectedRows.includes(row.id)}
+            onChange={() => handleRowSelect(row.id)}
+            className="cursor-pointer"
+            onClick={(e) => e.stopPropagation()} // Prevent checkbox click from triggering row click twice
+          />
+        </td>
+        <td className="px-4 py-3 w-[20px] text-blue-600 font-medium">{row.id}</td>
+        <td className="px-4 py-3 w-[80px]">{row.startTime}</td>
+        <td className="px-4 py-3 w-[80px]">{row.endTime}</td>
+        <td className="px-4 py-3 w-[150px]">{row.name}</td>
+        <td className="px-4 py-3 w-[80px]">{row.type}</td>
+        <td className="px-4 py-3 w-[80px]">{row.duration}</td>
+        <td className="px-4 py-3 w-[20px]">{row.isPaid ? "Yes" : "No"}</td>
       </tr>
-    </thead>
-    <tbody>
-      {filteredData.length === 0 ? (
-        <tr>
-          <td colSpan="6" className="px-4 py-6 text-center text-gray-500 italic">
-            No data
-          </td>
-        </tr>
-      ) : (
-        filteredData.map((row) => (
-          <tr
-          key={row.id}
-          draggable
-          onDragStart={(e) => handleDragStart(e, row)}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            setSelectedRow(row);
-            setContextMenu({
-              mouseX: e.clientX,
-              mouseY: e.clientY,
-            });
-          }}
-          >
-            <td className="px-4 py-3 w-[60px] text-blue-600 font-medium">{row.id}</td>
-            <td className="px-4 py-3 w-[100px]">{row.startTime}</td>
-            <td className="px-4 py-3 w-[100px]">{row.endTime}</td>
-            <td className="px-4 py-3 w-[200px]">{row.name}</td>
-            <td className="px-4 py-3 w-[100px]">{row.type}</td>
-            <td className="px-4 py-3 w-[100px]">{row.duration}</td>
-            <td className="px-4 py-3 w-[60px]">{row.isPaid ? "Yes" : "No"}</td>
-          </tr>
-        ))
-      )}
-    </tbody>
+    ))
+  )}
+</tbody>
+
+
   </table>
   {contextMenu && (
-  <div
-    className="fixed bg-white border rounded shadow-md z-50 text-sm"
-    style={{
-      top: contextMenu.mouseY,
-      left: contextMenu.mouseX,
+ <div
+ className="fixed bg-white border rounded shadow-md z-50 text-sm"
+ style={{
+   top: contextMenu.mouseY,
+   left: contextMenu.mouseX,
+ }}
+ onMouseLeave={() => setContextMenu(null)}
+>
+ {/* Update Button */}
+ {selectedRows.length === 1 && (
+  <button
+    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+    onClick={() => {
+      setShowUpdate(true);
+      setContextMenu(null);
     }}
-    onMouseLeave={() => setContextMenu(null)}
   >
-    <button
-      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-      onClick={() => {
-        setShowUpdate(true);
-        setContextMenu(null);
-      }}
-    >
-      Update
-    </button>
-  </div>
+    Update
+  </button>
 )}
+
+ {/* Copy Button */}
+ {/* Copy Button */}
+ <button
+  onClick={handleCopyRows}
+  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+>
+  Copy
+</button>
+
+
+
+ {/* Delete Button */}
+ <button
+  className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
+  onClick={() => {
+    if (selectedRows.length === 0) return;
+
+    // Split selected rows into parent rows vs local-only rows
+    const parentRowsToDelete = [];
+    const localRowsToDelete = [];
+
+    selectedRows.forEach(id => {
+      const parentRow = data.find(r => r.id === id);
+      if (parentRow) parentRowsToDelete.push(parentRow);
+      else {
+        const localRow = filteredData.find(r => r.id === id);
+        if (localRow) localRowsToDelete.push(localRow);
+      }
+    });
+
+    // Delete local rows
+    setFilteredData(prev => prev.filter(r => !selectedRows.includes(r.id)));
+
+    // Delete parent rows via onMoveRow (so toast can trigger)
+    parentRowsToDelete.forEach(row => onMoveRow(row, from, null));
+
+    // For local rows, you can manually trigger the toast if needed:
+    localRowsToDelete.forEach(row => {
+      toast.info(`${row.name} deleted`);
+      console.log("Deleted local row:", row.name); // or call your toast
+    });
+
+    // Clear selection and close context menu
+    setSelectedRows([]);
+    setContextMenu(null);
+  }}
+>
+  Delete
+</button>
+</div>
+)}
+
 {showUpdate && (
   <UpdateSchedulerModal
     show={showUpdate}
