@@ -284,15 +284,25 @@ const handleSelectAll = () => {
 
 }
 
+// Inside TableMeta
 const handleCopyRows = () => {
   const newRows = selectedRows.map(id => {
     const row = filteredData.find(r => r.id === id);
     return { ...row, id: Date.now() + Math.random(), name: `${row.name} (Copy)` };
   });
+
+  // 1️⃣ Add to local state
   setFilteredData(prev => [...prev, ...newRows]);
+
+  // 2️⃣ Also inform parent to update metaData
+  if (onMoveRow) {
+    newRows.forEach(row => onMoveRow(row, from, "metaCopy"));
+  }
+
   setSelectedRows([]);
   setContextMenu(null);
 };
+
 
 
 
@@ -307,6 +317,8 @@ const handleCopyRows = () => {
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
       >
+        {/* Toast container */}
+    
         {/* Header with Search */}
         <div className="datatable-header d-flex justify-content-between px-2 py-2 align-items-center">
           <div className="mb-0 text-rundown">
@@ -480,10 +492,7 @@ const handleCopyRows = () => {
     parentRowsToDelete.forEach(row => onMoveRow(row, from, null));
 
     // For local rows, you can manually trigger the toast if needed:
-    localRowsToDelete.forEach(row => {
-      toast.info(`${row.name} deleted`);
-      console.log("Deleted local row:", row.name); // or call your toast
-    });
+    parentRowsToDelete.forEach(row => toast.info(`Deleted "${row.name}"`));
 
     // Clear selection and close context menu
     setSelectedRows([]);
@@ -526,7 +535,7 @@ const handleCopyRows = () => {
   )}
 </div>
   
-        
+      
       </div>
     );
 };

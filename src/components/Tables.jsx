@@ -5,6 +5,9 @@ import tableData from '../services/TableData';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AddDataModal from './AddDataModal';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import autoTable from "jspdf-autotable"; 
 
 const Tables = () => {
   const [metaData, setMetaData] = useState([]);
@@ -77,10 +80,17 @@ const Tables = () => {
     }
   
     // 🟢 Step 2 — Regular removal when dragging out of meta
-    if (from === 'meta') {
+    {/*if (from === 'meta') {
       setMetaData(prev => prev.filter(row => row.id !== item.id));
       toast.info(`Removed "${item.name}"`);
-    }
+    }*/}
+    
+
+     if (to === "metaCopy") {
+    setMetaData(prev => [...prev, item]);
+    toast.success(`"${item.name}" copied to Meta`);
+    return;
+  }
   };
 
   // --- Helpers ---
@@ -163,52 +173,52 @@ const handleAddConfirm = () => {
   setMetaData(prev => {
     const updatedData = [...prev];
 
-    if (!item) {
-      // Add a dummy row if no pendingRow
-      const dummyRow = {
-        id: Date.now(),
-        name: "Untitled",
-        startTime: formatDate(now),
-        endTime: null,
-        duration: null,
-        note: "",
-        category: "",
-        type: "",
-        check: false,
-      };
-      updatedData.push(dummyRow);
-    } else {
-      // Update last item's endTime/duration if it exists
+    if (item) {
+      // Update last item's endTime/duration
       if (updatedData.length > 0) {
         const lastIndex = updatedData.length - 1;
         const lastItem = updatedData[lastIndex];
         const endTime = formatDate(now);
         const duration = calculateDuration(lastItem.startTime, now);
+        
         updatedData[lastIndex] = { ...lastItem, endTime, duration };
+       
       }
-
-      // Add the new pendingRow item
+      
       updatedData.push({
         ...item,
         startTime: formatDate(now),
         endTime: null,
         duration: null,
-        note: item.note || "",
+       
         category: item.category || "",
         type: item.type || "",
         check: item.check || false,
       });
     }
 
-    // ✅ Log safely inside the updater
+    // ✅ Now that metaData includes the copied row, trigger CSV if needed
     console.log("Updated metaData:", updatedData);
 
     return updatedData;
   });
 
+  if (metaData.length > 0) {
+  const lastItem = metaData[metaData.length - 1];
+  const endTime = formatDate(now);
+  const duration = calculateDuration(lastItem.startTime, now);
+  toast.info(`"${lastItem.name}" ended at ${endTime} (duration: ${duration})`);
+}
+
+    
+
   setShowAddDialog(false);
   setPendingRow(null);
 };
+
+
+
+
 
 const handleAddClick = (item) => {
   setFormInputs({
@@ -225,6 +235,7 @@ const handleAddClick = (item) => {
 
 // --- Helper to download CSV ---
 const downloadCSV = (data = metaData) => {
+   console.log("MetaData inside CSV:", metaData);
   if (!data || !Array.isArray(data) || data.length === 0) {
     toast.info("No data available to download.");
     return;
@@ -254,6 +265,33 @@ const downloadCSV = (data = metaData) => {
   a.click();
   URL.revokeObjectURL(url);
 };
+
+const downloadPDF = (data = metaData) => {
+  if (!data || data.length === 0) {
+    toast.info("No data available to download.");
+    return;
+  }
+
+  const doc = new jsPDF();
+
+  // Optional: add title
+  doc.setFontSize(14);
+  doc.text("Meta Table Export", 14, 15);
+
+  // Prepare table
+  const headers = Object.keys(data[0]);
+
+  autoTable(doc, {
+    startY: 20,
+    head: [headers],
+    body: data.map(row => headers.map(h => row[h] ?? '')),
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [220, 220, 220] },
+  });
+
+  doc.save(`meta_table_${new Date().toISOString().slice(0,10)}.pdf`);
+};
+
 
   return (
     <div>
@@ -347,10 +385,13 @@ const downloadCSV = (data = metaData) => {
                           onChange=""
                         />
                     </div>
-                   <button className="btn btn-sm btn-secondary ml-2" onClick={downloadCSV}>
-  CSV File
+                   <button className="btn btn-sm btn-secondary ml-2" onClick={() => downloadCSV(metaData)}>
+  CSV 
 </button>
-                    <button>pdf file</button>
+                  
+                     <button className="btn btn-sm btn-secondary ml-2" onClick={() => downloadPDF()}>
+  PDF
+</button>
                   </div>
                    
                   <div>
