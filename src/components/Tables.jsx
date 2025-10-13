@@ -173,59 +173,94 @@ const Tables = () => {
 
   const [showAddDialog, setShowAddDialog] = useState(false);
 const [pendingRow, setPendingRow] = useState(null);
-const [formInputs, setFormInputs] = useState({ note: '', category: '' });
+const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().split("T")[0],
+  note: "",
+  category: "",
+  type: "",
+  repeat: false,
+  isCommercial: false,
+  bonus: false,
+  timePeriod: { hour: 0, minute: 0, second: 0, frame: 0 }, });
 
 const handleAddConfirm = () => {
-  const now = new Date();
   const item = pendingRow;
+  if (!item) return;
 
   setMetaData(prev => {
     const updatedData = [...prev];
+    const userTime = formInputs.timePeriod;
 
-    if (item) {
-      // Update last item's endTime/duration
-      if (updatedData.length > 0) {
-        const lastIndex = updatedData.length - 1;
-        const lastItem = updatedData[lastIndex];
-        const endTime = formatDate(now);
-        const duration = calculateDuration(lastItem.startTime, now);
-        
-        updatedData[lastIndex] = { ...lastItem, endTime, duration };
-       
-      }
-      
+    if (updatedData.length > 0) {
+      console.log("from if");
+      const lastIndex = updatedData.length - 1;
+      const lastItem = updatedData[lastIndex];
+      const lastPeriod = lastItem.timePeriod; //|| { hour: 0, minute: 0, second: 0, frame: 0 };
+      const lastStart = new Date(lastItem.startTime);
+      const lastEndTime = addTimePeriod(lastStart, formInputs.timePeriod);
+
+      updatedData[lastIndex] = {
+        ...lastItem,
+        endTime: formatDate(lastEndTime),
+        duration: lastItem.duration || "",
+      };
+
+      // New row starts exactly at lastEndTime
       updatedData.push({
         ...item,
-        startTime: formatDate(now),
+        startTime: formatDate(lastEndTime),
         endTime: null,
-        duration: null,
-       
-        category: item.category || "",
-        type: item.type || "",
-        check: item.check || false,
+        duration: item.duration || "",
+        timePeriod: formInputs.timePeriod,
+        category: formInputs.category,
+        type: formInputs.type,
+        repeat: formInputs.repeat,
+        isCommercial: formInputs.isCommercial,
+        bonus: formInputs.bonus,
       });
+
+      console.log("from handleAddConfirm input time period", formInputs.timePeriod);
+    } else {
+      console.log("from else");
+      // First row → use user-provided time
+      const baseDate = new Date();
+      baseDate.setHours(0, 0, 0, 0); // start at midnight
+      const startTime = addTimePeriod(baseDate, formInputs.timePeriod);
+
+      // add userTime as period
+      updatedData.push({
+        ...item,
+        startTime: formatDate(startTime),
+        endTime: null,
+        duration: item.duration || "",
+        timePeriod: formInputs.timePeriod,
+        category: formInputs.category,
+        type: formInputs.type,
+        repeat: formInputs.repeat,
+        isCommercial: formInputs.isCommercial,
+        bonus: formInputs.bonus,
+      });
+
+      console.log("from handleAddConfirm input time period", formInputs.timePeriod);
     }
-
-    // ✅ Now that metaData includes the copied row, trigger CSV if needed
-    console.log("Updated metaData:", updatedData);
-
     return updatedData;
   });
 
-  if (metaData.length > 0) {
-  const lastItem = metaData[metaData.length - 1];
-  const endTime = formatDate(now);
-  const duration = calculateDuration(lastItem.startTime, now);
-  toast.info(`"${lastItem.name}" ended at ${endTime} (duration: ${duration})`);
-}
-
-    
-
   setShowAddDialog(false);
   setPendingRow(null);
+  setFormInputs({
+    ...formInputs,
+    timePeriod: { hour: 0, minute: 0, second: 0, frame: 0 },
+  });
 };
 
-
+function addTimePeriod(date, period) {
+  console.log("from addTime", date, period);
+  const d = new Date(date); // clone
+  const totalMs =
+    ((period.hour || 0) * 3600 + (period.minute || 0) * 60 + (period.second || 0)) * 1000 +
+    (period.frame || 0) * (1000 / 25); // frame to ms if 25fps
+  return new Date(d.getTime() + totalMs);
+}
 
 
 

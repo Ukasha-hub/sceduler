@@ -36,9 +36,11 @@ const AddDataModal = ({
               <div className="form-group" style={{ flex: "0 0 30%" }}>
                 <label className="text-xs">Date</label>
                 <input
-                  type="date"
-                  className="form-control form-control-sm text-xs"
-                />
+  type="date"
+  className="form-control form-control-sm text-xs"
+  value={formInputs.date}
+  onChange={(e) => setFormInputs({ ...formInputs, date: e.target.value })}
+/>
               </div>
               <div className="form-group" style={{ flex: "0 0 30%" }}>
                 <label className="text-xs">Slug</label>
@@ -61,11 +63,11 @@ const AddDataModal = ({
                 <input
                   type="checkbox"
                   className="form-check-input"
-                  checked={formInputs.check || false}
+                  checked={formInputs.repeat || false}
                   onChange={(e) =>
                     setFormInputs({
                       ...formInputs,
-                      check: e.target.checked,
+                      repeat: e.target.checked,
                     })
                   }
                 />
@@ -75,13 +77,20 @@ const AddDataModal = ({
 
             <div className="flex flex-row flex-wrap gap-2 mt-1">
               <div className="form-group" style={{ flex: "0 0 30%" }}>
-                <label className="text-xs">Type</label>
-                <select className="form-control form-control-sm text-xs">
-                  <option>COM</option>
-                  <option>PGM</option>
-                  <option value="">PRO</option>
-                </select>
-              </div>
+  <label className="text-xs">Type</label>
+  <input
+    type="text"
+    className="form-control form-control-sm text-xs"
+    value={formInputs.type || pendingRow?.type || ""} // prefill from pendingRow.type
+    onChange={(e) =>
+      setFormInputs({
+        ...formInputs,
+        type: e.target.value,
+      })
+    }
+    readOnly
+  />
+</div>
               <div
                 className="form-group flex items-center ml-4 mb-0"
                 style={{ flex: "0 0 30%" }}
@@ -89,11 +98,11 @@ const AddDataModal = ({
                 <input
                   type="checkbox"
                   className="form-check-input"
-                  checked={formInputs.check || false}
+                  checked={formInputs.com || false}
                   onChange={(e) =>
                     setFormInputs({
                       ...formInputs,
-                      check: e.target.checked,
+                      com: e.target.checked,
                     })
                   }
                 />
@@ -103,7 +112,7 @@ const AddDataModal = ({
 
             <div className="flex flex-row flex-wrap gap-2 mt-1">
               <div className="form-group" style={{ flex: "0 0 30%" }}>
-                <label className="text-xs">Type</label>
+                <label className="text-xs">Type Labels</label>
                 <select className="form-control form-control-sm text-xs">
                   <option>COM</option>
                   <option>not COM</option>
@@ -137,11 +146,11 @@ const AddDataModal = ({
                   }
                 />
               </div>
-              <div className="form-group" style={{ flex: "0 0 25%" }}>
+              <div className="form-group" style={{ flex: "0 0 50%" }}>
                 <label className="text-xs">Project Name</label>
                 <input
                   type="text"
-                  className="form-control form-control-sm text-xs"
+                  className="form-control form-control-sm w-full text-xs"
                   value={pendingRow?.name || ""}
                   readOnly
                 />
@@ -157,39 +166,100 @@ const AddDataModal = ({
               </div>
             </div>
 
-            <h6 className="font-bold text-xs mt-2">Time Period</h6>
-            <div className="flex flex-row flex-wrap gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="form-group" style={{ flex: "0 0 22%" }}>
-                  <select className="form-control form-control-sm text-xs">
-                    <option>00</option>
-                    <option>01</option>
-                    <option>02</option>
-                  </select>
-                </div>
-              ))}
-            </div>
+            {/* Time Period */}
+<h6 className="font-bold text-xs mt-2">Time Period</h6>
+<div className="flex flex-row flex-wrap gap-2">
+  {["hour", "minute", "second", "frame"].map((type, idx) => (
+    <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
+      <input
+        type="text"
+        className="form-control form-control-sm text-xs"
+        maxLength={2}
+        placeholder="00"
+        value={formInputs.timePeriod?.[type] ?? ""}
+        onChange={(e) => {
+          let value = e.target.value.replace(/\D/g, ""); // remove non-digit
+          if ((type === "minute" || type === "second") && parseInt(value) > 59) {
+            value = "59";
+          }
 
-            <h6 className="font-bold text-xs mt-2">Duration</h6>
-            <div className="flex flex-row flex-wrap gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="form-group" style={{ flex: "0 0 22%" }}>
-                  <select className="form-control form-control-sm text-xs">
-                    <option>COM</option>
-                    <option>00</option>
-                  </select>
-                </div>
-              ))}
-            </div>
+          setFormInputs({
+            ...formInputs,
+            timePeriod: {
+              ...formInputs.timePeriod,
+              [type]: value ? parseInt(value) : 0
+            }
+          });
+         // console.log(formInputs.timePeriod)
+        }}
+      />
+    </div>
+  ))}
+</div>
+
+
+{/* Duration */}
+<h6 className="font-bold text-xs mt-2">Duration</h6>
+<div className="flex flex-row flex-wrap gap-2">
+  {(() => {
+    const durationParts = pendingRow?.duration?.split(":") || ["", "", ""];
+    const frameRate = pendingRow?.frameRate?.replace(/\D/g, "") || "";
+
+    return ["hour", "minute", "second", "frame"].map((type, idx) => (
+      <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
+        <input
+          type="text"
+          className="form-control form-control-sm text-xs"
+          maxLength={2}
+          placeholder="00"
+          defaultValue={
+            idx === 3 
+              ? frameRate // frame
+              : durationParts[idx] // hour, minute, second
+          }
+          onChange={(e) => {
+            let value = e.target.value.replace(/\D/g, "");
+            if ((type === "minute" || type === "second") && parseInt(value) > 59) {
+              value = "59";
+            }
+            e.target.value = value;
+          }}
+           readOnly
+        />
+      </div>
+    ));
+  })()}
+</div>
+
+
 
             <div className="flex flex-row flex-wrap gap-2 mt-1">
               <div className="form-group" style={{ flex: "0 0 25%" }}>
-                <label className="text-xs">End Date</label>
-                <input
-                  type="date"
-                  className="form-control form-control-sm text-xs"
-                />
-              </div>
+  <label className="text-xs">End Time (HH:MM:SS)</label>
+  <input
+    type="text"
+    className="form-control form-control-sm text-xs"
+    placeholder="00:00:00"
+    maxLength={8}
+    onChange={(e) => {
+      let value = e.target.value.replace(/[^0-9:]/g, "");
+
+      // Auto-format to HH:MM:SS while typing
+      if (/^\d{2}$/.test(value)) value = value + ":";
+      if (/^\d{2}:\d{2}$/.test(value)) value = value + ":";
+
+      // Validate MM and SS not exceeding 59
+      const parts = value.split(":");
+      if (parts[1] && parseInt(parts[1]) > 59) parts[1] = "59";
+      if (parts[2] && parseInt(parts[2]) > 59) parts[2] = "59";
+
+      value = parts.join(":");
+
+      e.target.value = value;
+    }}
+  />
+</div>
+
               <div
                 className="form-group flex items-center ml-4 mb-0"
                 style={{ flex: "0 0 25%" }}
@@ -197,11 +267,11 @@ const AddDataModal = ({
                 <input
                   type="checkbox"
                   className="form-check-input"
-                  checked={formInputs.check || false}
+                  checked={formInputs.bonus || false}
                   onChange={(e) =>
                     setFormInputs({
                       ...formInputs,
-                      check: e.target.checked,
+                      bonus: e.target.checked,
                     })
                   }
                 />
