@@ -5,6 +5,7 @@ import Tables from "../components/Tables";
 import Rundown from "../pages/Rundown";
 import { SettingsScheduler } from "../pages/SettingsScheduler";
 import { SlugSetup } from "../pages/SlugSetup";
+import FilterSetup from "../pages/FilterSetup";
 
 function SideNav({ onOpenTab }) {
   const location = useLocation();
@@ -139,6 +140,17 @@ function SideNav({ onOpenTab }) {
                   >
                     <i className="far fa-circle nav-icon text-white" />
                     <p className="text-white">Slug Setup</p>
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className="nav-link text-left w-100"
+                    onClick={() =>
+                      onOpenTab("filterSetup", "Filter Setup", <FilterSetup></FilterSetup>)
+                    }
+                  >
+                    <i className="far fa-circle nav-icon text-white" />
+                    <p className="text-white">Filter Setup</p>
                   </button>
                 </li>
               </ul>

@@ -78,7 +78,8 @@ const AddDataModal = ({
                 <label className="text-xs">Type</label>
                 <select className="form-control form-control-sm text-xs">
                   <option>COM</option>
-                  <option>not COM</option>
+                  <option>PGM</option>
+                  <option value="">PRO</option>
                 </select>
               </div>
               <div
@@ -161,8 +162,9 @@ const AddDataModal = ({
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="form-group" style={{ flex: "0 0 22%" }}>
                   <select className="form-control form-control-sm text-xs">
-                    <option>COM</option>
                     <option>00</option>
+                    <option>01</option>
+                    <option>02</option>
                   </select>
                 </div>
               ))}

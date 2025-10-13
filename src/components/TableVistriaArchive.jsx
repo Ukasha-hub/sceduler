@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const TableVistriaArchive = ({ data, onMoveRow, from }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,15 +22,37 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
     e.dataTransfer.setData("fromTable", from);
   };
 
+  
+    const containerRef = useRef(null);
+    const [isNarrow, setIsNarrow] = useState(false);
+  
+    useEffect(() => {
+      const observer = new ResizeObserver((entries) => {
+        const width = entries[0].contentRect.width;
+        setIsNarrow(width < 600); // 🔧 Adjust threshold as needed
+      });
+  
+      if (containerRef.current) {
+        observer.observe(containerRef.current);
+      }
+  
+      return () => observer.disconnect();
+    }, []);
+
   return (
     <div
       className="bg-white shadow-md rounded-lg overflow-hidden"
       onDragOver={(e) => e.preventDefault()}
     >
       {/* Header */}
-      <div className="flex flex-col  md:items-center md:justify-between px-4 py-3 border-b space-y-2 md:space-y-0">
+      <div
+      ref={containerRef}
+      className={`flex flex-wrap px-4 py-3 border-b gap-2 ${
+        isNarrow ? "justify-center" : "justify-between"
+      }`}
+    >
         {/* Checkboxes */}
-        <div className="flex  items-center space-x-4">
+        <div className="flex items-center space-x-4">
           <label className="flex items-center space-x-1 text-xs text-gray-600">
             <input
               type="checkbox"
@@ -52,14 +74,14 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
         </div>
 
         {/* Search Bar */}
-        <div className="flex flex-col justify-center md:flex-row md:items-center gap-2 w-full">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <select
               className="border rounded px-1 py-0.5 text-[10px] w-full md:w-32"
               id="slot"
             >
-              <option value="">Select slot</option>
-              <option value="Slot 1">Slot 1</option>
-              <option value="Slot 2">Slot 2</option>
+              <option value="">Filter By:</option>
+              <option value="Slot 1">COM</option>
+              <option value="Slot 2">PGM</option>
               <option value="Slot 3">Slot 3</option>
             </select>
 

@@ -8,6 +8,8 @@ import AddDataModal from './AddDataModal';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import autoTable from "jspdf-autotable"; 
+import { FaFileCsv } from "react-icons/fa6";
+import { FaFilePdf } from "react-icons/fa6";
 
 const Tables = () => {
   const [metaData, setMetaData] = useState([]);
@@ -84,6 +86,13 @@ const Tables = () => {
       setMetaData(prev => prev.filter(row => row.id !== item.id));
       toast.info(`Removed "${item.name}"`);
     }*/}
+
+    if (to === null) {
+      // Delete operation
+      setMetaData(prev => prev.filter(r => r.id !== item.id));
+      toast.info(`Deleted "${item.name}"`);
+      return;
+    }
     
 
      if (to === "metaCopy") {
@@ -292,6 +301,11 @@ const downloadPDF = (data = metaData) => {
   doc.save(`meta_table_${new Date().toISOString().slice(0,10)}.pdf`);
 };
 
+const getToday = () => {
+  const today = new Date();
+  return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
+};
+
 
   return (
     <div>
@@ -375,22 +389,20 @@ const downloadPDF = (data = metaData) => {
                 <div className="flex justify-between items-center bg-gray-100 border-b px-3 py-1">
                   <div className='flex flex-row justify-start gap-3'>
                     <div className="form-group flex gap-0">
-                      <label>Start Date:</label>
-                        <input
-                          type="date"
-                          className="form-control  text-xs"
-                          placeholder='Start Date'
-                          id="fromDate"
-                          value=""
-                          onChange=""
-                        />
+                      <label>Date:</label>
+                      <input
+                        type="date"
+                        className="form-control text-xs"
+                        id="fromDate"
+                        defaultValue={getToday()}
+                      />
                     </div>
-                   <button className="btn btn-sm btn-secondary ml-2" onClick={() => downloadCSV(metaData)}>
-  CSV 
+                   <button className="btn btn-xs text-xs text-black bg-green-300 h-9 p-1" onClick={() => downloadCSV(metaData)}>
+  <FaFileCsv /> CSV
 </button>
                   
-                     <button className="btn btn-sm btn-secondary ml-2" onClick={() => downloadPDF()}>
-  PDF
+                     <button className="btn btn-xs text-xs text-black bg-red-300 h-9 p-1" onClick={() => downloadPDF()}>
+                     <FaFilePdf />PDF
 </button>
                   </div>
                    

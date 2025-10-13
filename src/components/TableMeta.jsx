@@ -492,7 +492,7 @@ const handleCopyRows = () => {
     parentRowsToDelete.forEach(row => onMoveRow(row, from, null));
 
     // For local rows, you can manually trigger the toast if needed:
-    parentRowsToDelete.forEach(row => toast.info(`Deleted "${row.name}"`));
+   // parentRowsToDelete.forEach(row => toast.info(`Deleted "${row.name}"`));
 
     // Clear selection and close context menu
     setSelectedRows([]);

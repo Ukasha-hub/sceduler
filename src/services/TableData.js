@@ -1,7 +1,7 @@
 const tableData = [
   {
     id: "OR9842",
-    name: "Call of Duty IV",
+    name: "PGM_Sultan Suleiman episode 1",
     type: "Game",
     size: "2.5GB",
     status: "Okay",
@@ -14,7 +14,7 @@ const tableData = [
   },
   {
     id: "OR1848",
-    name: "Samsung Smart TV",
+    name: "COM Surf Excel",
     type: "Electronics",
     size: "42 inch",
     status: "Not Okay",
@@ -27,7 +27,7 @@ const tableData = [
   },
   {
     id: "OR7429",
-    name: "iPhone 6 Plus",
+    name: "PROMO Deepto Krishi",
     type: "Mobile",
     size: "128GB",
     status: "Okay",
