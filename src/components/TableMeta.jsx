@@ -73,10 +73,8 @@ useEffect(() => {
   const handleDragStart = (e, item) => {
     e.dataTransfer.setData("rowData", JSON.stringify(item));
     e.dataTransfer.setData("fromTable", from);
-    // If dragging from Meta, remove immediately
-  if (from === "meta") {
-    onMoveRow(item, "meta", null); // 'to' can be null if it's going outside
-  }
+
+  
   };
 
   const handleDrop = (e) => {
@@ -274,6 +272,15 @@ const handleRowSelect = (id) => {
   );
 };
 
+const handleRowRightClick = (e, row) => {
+  e.preventDefault(); // prevent default browser menu
+  setSelectedRows([row.id]); // select this row
+  setContextMenu({
+    mouseX: e.clientX + 2,
+    mouseY: e.clientY - 6
+  });
+};
+
 // ✅ Function to toggle all
 const handleSelectAll = () => {
   if (selectedRows.length === filteredData.length) {
@@ -304,6 +311,35 @@ const handleCopyRows = () => {
 };
 
 
+useEffect(() => {
+  const handleOutsideClick = (e) => {
+    // If click is NOT on table row or context menu → clear selection & menu
+    if (!e.target.closest("tr") && !e.target.closest(".custom-context-menu")) {
+      setSelectedRows([]);
+      setContextMenu(null);
+    }
+  };
+
+  document.addEventListener("click", handleOutsideClick);
+  return () => document.removeEventListener("click", handleOutsideClick);
+}, []);
+
+useEffect(() => {
+  const handleOutsideRightClick = (e) => {
+
+   // Allow right-clicks on selected rows without clearing
+   const isOnRow = e.target.closest("tr");
+  const isInMenu = e.target.closest(".custom-context-menu");
+  if (!isOnRow && !isInMenu) {
+      setSelectedRows([]);
+      setContextMenu(null);
+    }
+  }
+  
+
+  document.addEventListener("contextmenu", handleOutsideRightClick);
+  return () => document.removeEventListener("contextmenu", handleOutsideRightClick);
+}, []);
 
 
   
@@ -360,7 +396,7 @@ const handleCopyRows = () => {
   }}>
 
 <thead className="bg-gray-100">
-  <tr>
+  <tr >
     <th className=" py-3 w-[10px]">
       {/* Optional: Master Checkbox */}
       <label className="flex items-center justify-center gap-1">
@@ -385,57 +421,105 @@ const handleCopyRows = () => {
 <tbody>
   {filteredData.length === 0 ? (
     <tr>
-      <td colSpan="7" className="px-4 py-6 text-center text-gray-500 italic">
+      <td colSpan="8" className="px-4 py-6 text-center text-gray-500 italic">
         No data
       </td>
     </tr>
   ) : (
-    filteredData.map((row) => (
-      <tr
+    filteredData.map((row, index) => {
+      console.log("Row data:", row);
+      // Compute Start Time
+      const startParts = row.startTime?.split(":") || ["00", "00", "00"];
+  
+  // Use previous row's total frame as start frame
+  let startFrame = "00";
+  if (index > 0) {
+    const prevRow = filteredData[index - 1];
+    const prevFrame = parseInt(prevRow.prevFrameRate || "0");
+    const currFrame = parseInt(prevRow.frameRate || "0");
+    let totalFrame = prevFrame + currFrame;
+    totalFrame = totalFrame % 25; // assuming 25 fps
+    startFrame = String(totalFrame).padStart(2, "0");
+  } else {
+    startFrame = String(parseInt(row.prevFrameRate || "0")).padStart(2, "0");
+  }
+
+  const startTimeStr = `${startParts[0].padStart(2,"0")}:${startParts[1].padStart(2,"0")}:${startParts[2].padStart(2,"0")}:${startFrame}`;
+
+      // Compute End Time
+      const durationParts = row.duration?.split(":") || ["0","0","0"];
+      const prevFrame = parseInt(row.prevFrameRate || "0");
+      const currFrame = parseInt(row.frameRate || "0");
+      let totalFrame = prevFrame + currFrame;
+      const extraSeconds = Math.floor(totalFrame / 25); // Assuming 25fps
+      totalFrame = totalFrame % 25;
+
+      const endDate = new Date(row.prevEndTime || new Date(0));
+      endDate.setHours(endDate.getHours() + parseInt(durationParts[0] || "0"));
+      endDate.setMinutes(endDate.getMinutes() + parseInt(durationParts[1] || "0"));
+      endDate.setSeconds(endDate.getSeconds() + parseInt(durationParts[2] || "0") + extraSeconds);
+
+      const endTimeStr = `${String(endDate.getHours()).padStart(2,"0")}:${String(endDate.getMinutes()).padStart(2,"0")}:${String(endDate.getSeconds()).padStart(2,"0")}:${String(totalFrame).padStart(2,"0")}`;
+
+      return (
+        <tr
         key={row.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, row)}
-        onClick={(e) => {
-          // Prevent row selection if right-clicked
-          if (e.button === 2) return;
-          handleRowSelect(row.id);
-        }}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          if (!selectedRows.includes(row.id)) {
-            setSelectedRows([row.id]); // select only this row
-          }
-          setSelectedRow(row);
-          setContextMenu({ mouseX: e.clientX, mouseY: e.clientY });
-        }}
-        className={selectedRows.includes(row.id) ? "bg-gray-100 cursor-pointer" : "cursor-pointer"}
-      >
-        <td className="px-2 w-[10px]">
-          <input
-            type="checkbox"
-            checked={selectedRows.includes(row.id)}
-            onChange={() => handleRowSelect(row.id)}
-            className="cursor-pointer"
-            onClick={(e) => e.stopPropagation()} // Prevent checkbox click from triggering row click twice
-          />
-        </td>
-        <td className="px-4 py-3 w-[20px] text-blue-600 font-medium">{row.id}</td>
-        <td className="px-4 py-3 w-[80px]">{row.startTime}</td>
-        <td className="px-4 py-3 w-[80px]">{row.endTime}</td>
-        <td className="px-4 py-3 w-[150px]">{row.name}</td>
-        <td className="px-4 py-3 w-[80px]">{row.type}</td>
-        <td className="px-4 py-3 w-[80px]">{row.duration}</td>
-        <td className="px-4 py-3 w-[20px]">{row.isPaid ? "Yes" : "No"}</td>
-      </tr>
-    ))
+  draggable
+  onDragStart={(e) => handleDragStart(e, row)}
+
+  onClick={() => handleRowSelect(row.id)} // Left click select
+
+  onContextMenu={(e) => {
+    e.preventDefault();
+    //e.stopPropagation();
+    handleRowSelect(row.id); // ✅ Right click also selects row
+
+    setContextMenu({
+      mouseX: e.clientX + 2,
+      mouseY: e.clientY - 6,
+    });
+  }}
+
+  className={selectedRows.includes(row.id) ? "bg-gray-100 cursor-pointer" : "cursor-pointer"}
+        >
+          <td className="px-2 w-[10px]">
+            <input
+              type="checkbox"
+              checked={selectedRows.includes(row.id)}
+              onChange={() => handleRowSelect(row.id)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </td>
+          <td className="px-4 py-3">{row.id}</td>
+          <td className="px-4 py-3">{startTimeStr}</td>
+          <td className="px-4 py-3">{endTimeStr}</td>
+          <td className="px-4 py-3">{row.name}</td>
+          <td className="px-4 py-3">{row.type}</td>
+          <td className="px-4 py-3">
+  {(() => {
+    const durationParts = row.duration?.split(":") || ["0","0","0"];
+    
+    const currFrame = parseInt(row.frameRate || "0");
+   
+
+    const frameValue = String(currFrame % 25).padStart(2, "0"); // Assuming 25 FPS
+
+    return `${durationParts[0].padStart(2,"0")}:${durationParts[1].padStart(2,"0")}:${durationParts[2].padStart(2,"0")}:${frameValue}`;
+  })()}
+</td>
+          <td className="px-4 py-3">{row.isPaid ? "Yes" : "No"}</td>
+        </tr>
+      );
+    })
   )}
 </tbody>
+
 
 
   </table>
   {contextMenu && (
  <div
- className="fixed bg-white border rounded shadow-md z-50 text-sm"
+ className="custom-context-menu fixed bg-white border rounded shadow-md z-50 text-sm"
  style={{
    top: contextMenu.mouseY,
    left: contextMenu.mouseX,

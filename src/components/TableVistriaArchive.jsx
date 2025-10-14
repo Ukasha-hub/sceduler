@@ -39,6 +39,24 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
       return () => observer.disconnect();
     }, []);
 
+    const [selectedFilter, setSelectedFilter] = useState(""); 
+
+    useEffect(() => {
+      setFilteredData(
+        data.filter((row) => {
+          const matchesSearch =
+            row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            row.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            row.status.toLowerCase().includes(searchTerm.toLowerCase());
+    
+          const matchesFilter =
+            selectedFilter === "" || selectedFilter === "All" || row.type === selectedFilter;
+    
+          return matchesSearch && matchesFilter;
+        })
+      );
+    }, [searchTerm, selectedFilter, data]);
+
   return (
     <div
       className="bg-white shadow-md rounded-lg overflow-hidden"
@@ -75,14 +93,20 @@ const TableVistriaArchive = ({ data, onMoveRow, from }) => {
 
         {/* Search Bar */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <select
-              className="border rounded px-1 py-0.5 text-[10px] w-full md:w-32"
-              id="slot"
-            >
+        <select
+  className="border rounded px-1 py-0.5 text-[10px] w-full md:w-32"
+  value={selectedFilter}
+  onChange={(e) => setSelectedFilter(e.target.value)}
+>
               <option value="">Filter By:</option>
-              <option value="Slot 1">COM</option>
-              <option value="Slot 2">PGM</option>
-              <option value="Slot 3">Slot 3</option>
+              <option value="All">All</option>
+              <option value="PGM">PGM</option>
+              <option value="COM">COM</option>
+              <option value="FILLER">FILLER</option>
+              <option value="COM-GFX">COM-GFX</option>
+              <option value="GFX">GFX</option>
+              <option value="PROMO">PROMO</option>
+              <option value="TEASER">TEASER</option>
             </select>
 
             <input

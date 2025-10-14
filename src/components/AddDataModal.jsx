@@ -10,6 +10,21 @@ const AddDataModal = ({
 }) => {
   if (!show) return null; // Don't render if not visible
 
+  const isFormValid = (() => {
+    const currentType = formInputs.type || pendingRow?.type || ""; // ✅ normalize
+  
+    const isTypeCOM = currentType === "COM";
+    const hasRateAgreement = !!formInputs.rateAgreementNo?.trim();
+    const hasAgency = !!formInputs.agency?.trim();
+  
+    if (isTypeCOM) {
+      return hasRateAgreement && hasAgency;
+    }
+    return true;
+  })();
+
+  const frame = pendingRow?.timePeriod?.frame ?? 0;
+
   return (
     <div
       className="modal fade show"
@@ -40,6 +55,7 @@ const AddDataModal = ({
   className="form-control form-control-sm text-xs"
   value={formInputs.date}
   onChange={(e) => setFormInputs({ ...formInputs, date: e.target.value })}
+  readOnly
 />
               </div>
               <div className="form-group" style={{ flex: "0 0 30%" }}>
@@ -112,10 +128,10 @@ const AddDataModal = ({
 
             <div className="flex flex-row flex-wrap gap-2 mt-1">
               <div className="form-group" style={{ flex: "0 0 30%" }}>
-                <label className="text-xs">Type Labels</label>
+                <label className="text-xs">Select</label>
                 <select className="form-control form-control-sm text-xs">
-                  <option>COM</option>
-                  <option>not COM</option>
+                  <option>a</option>
+                  <option>b</option>
                 </select>
               </div>
               <div className="form-group" style={{ flex: "0 0 25%" }}>
@@ -123,28 +139,30 @@ const AddDataModal = ({
                 <input
                   type="text"
                   className="form-control form-control-sm text-xs"
-                  value={formInputs.category}
+                  value={formInputs.rateAgreementNo || ""}   // ✅ instead of category
                   onChange={(e) =>
                     setFormInputs({
                       ...formInputs,
-                      category: e.target.value,
+                      rateAgreementNo: e.target.value,       // ✅ use correct key
                     })
                   }
                 />
+                <p className="text-gray-500 text-xs">Mandatory for COM</p>
               </div>
               <div className="form-group" style={{ flex: "0 0 25%" }}>
                 <label className="text-xs">Agency</label>
                 <input
                   type="text"
                   className="form-control form-control-sm text-xs"
-                  value={formInputs.category}
+                  value={formInputs.agency || ""}           // ✅ instead of category
                   onChange={(e) =>
                     setFormInputs({
                       ...formInputs,
-                      category: e.target.value,
+                      agency: e.target.value,               // ✅
                     })
                   }
                 />
+                 <p className="text-gray-500 text-xs">Mandatory for COM</p>
               </div>
               <div className="form-group" style={{ flex: "0 0 50%" }}>
                 <label className="text-xs">Project Name</label>
@@ -167,35 +185,27 @@ const AddDataModal = ({
             </div>
 
             {/* Time Period */}
-<h6 className="font-bold text-xs mt-2">Time Period</h6>
+{/* Time Period */}
+<h6 className="font-bold text-xs mt-2">Time Period </h6>
 <div className="flex flex-row flex-wrap gap-2">
   {["hour", "minute", "second", "frame"].map((type, idx) => (
     <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
       <input
         type="text"
         className="form-control form-control-sm text-xs"
-        maxLength={2}
-        placeholder="00"
-        value={formInputs.timePeriod?.[type] ?? ""}
-        onChange={(e) => {
-          let value = e.target.value.replace(/\D/g, ""); // remove non-digit
-          if ((type === "minute" || type === "second") && parseInt(value) > 59) {
-            value = "59";
-          }
-
-          setFormInputs({
-            ...formInputs,
-            timePeriod: {
-              ...formInputs.timePeriod,
-              [type]: value ? parseInt(value) : 0
-            }
-          });
-         // console.log(formInputs.timePeriod)
-        }}
+        value={
+          idx < 3
+            ? pendingRow?.prevEndTime
+              ? pendingRow.prevEndTime.split(" ")[1].split(":")[idx] // HH, MM, SS
+              : "00"
+            : pendingRow?.prevFrameRate || "0" // frame from previous row
+        }
+        readOnly
       />
     </div>
   ))}
 </div>
+
 
 
 {/* Duration */}
@@ -234,31 +244,53 @@ const AddDataModal = ({
 
 
             <div className="flex flex-row flex-wrap gap-2 mt-1">
-              <div className="form-group" style={{ flex: "0 0 25%" }}>
-  <label className="text-xs">End Time (HH:MM:SS)</label>
+            <div className="form-group" style={{ flex: "0 0 25%" }}>
+  <label className="text-xs">End Time (HH:MM:SS:FF)</label>
   <input
     type="text"
     className="form-control form-control-sm text-xs"
-    placeholder="00:00:00"
-    maxLength={8}
-    onChange={(e) => {
-      let value = e.target.value.replace(/[^0-9:]/g, "");
+    placeholder="00:00:00:00"
+    maxLength={11}
+    value={
+      pendingRow
+        ? (() => {
+            const startTime = pendingRow.prevEndTime
+              ? new Date(pendingRow.prevEndTime)
+              : new Date(0);
 
-      // Auto-format to HH:MM:SS while typing
-      if (/^\d{2}$/.test(value)) value = value + ":";
-      if (/^\d{2}:\d{2}$/.test(value)) value = value + ":";
+            const durationParts = pendingRow.duration?.split(":") || ["0","0","0"];
+            const hours = parseInt(durationParts[0] || "0");
+            const minutes = parseInt(durationParts[1] || "0");
+            const seconds = parseInt(durationParts[2] || "0");
 
-      // Validate MM and SS not exceeding 59
-      const parts = value.split(":");
-      if (parts[1] && parseInt(parts[1]) > 59) parts[1] = "59";
-      if (parts[2] && parseInt(parts[2]) > 59) parts[2] = "59";
+            const newEnd = new Date(startTime);
+            newEnd.setHours(newEnd.getHours() + hours);
+            newEnd.setMinutes(newEnd.getMinutes() + minutes);
+            newEnd.setSeconds(newEnd.getSeconds() + seconds);
 
-      value = parts.join(":");
+            // Calculate frame as previous frame + current row frame
+            const prevFrame = parseInt(pendingRow.prevFrameRate || "0");
+            const currFrame = parseInt(pendingRow.frameRate || "0");
+            let totalFrame = prevFrame + currFrame;
 
-      e.target.value = value;
-    }}
+            // Normalize frame if exceeds 24 (25fps)
+            const extraSeconds = Math.floor(totalFrame / 25);
+            totalFrame = totalFrame % 25;
+            newEnd.setSeconds(newEnd.getSeconds() + extraSeconds);
+
+            const hh = String(newEnd.getHours()).padStart(2, "0");
+            const mm = String(newEnd.getMinutes()).padStart(2, "0");
+            const ss = String(newEnd.getSeconds()).padStart(2, "0");
+            const ff = String(totalFrame).padStart(2, "0");
+
+            return `${hh}:${mm}:${ss}:${ff}`;
+          })()
+        : ""
+    }
+    readOnly
   />
 </div>
+
 
               <div
                 className="form-group flex items-center ml-4 mb-0"
@@ -291,9 +323,13 @@ const AddDataModal = ({
             <button className="btn btn-secondary btn-sm" onClick={onClose}>
               Cancel
             </button>
-            <button className="btn btn-primary btn-sm" onClick={onConfirm}>
-              Add
-            </button>
+            <button
+  className="btn btn-primary btn-sm"
+  onClick={onConfirm}
+  disabled={!isFormValid}
+>
+  Add
+</button>
           </div>
         </div>
       </div>

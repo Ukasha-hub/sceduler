@@ -62,6 +62,14 @@ const Tables = () => {
     }
   };
 
+  
+  
+  const computeDuration = (durationStr) => {
+    if (!durationStr) return 0;
+    const parts = durationStr.split(':').map(p => parseInt(p, 10) || 0);
+    const [hours, minutes, seconds] = parts;
+    return ((hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0)) * 1000;
+  };
   // --- Move Row Logic ---
   const moveRow = (item, from, to) => {
     const now = new Date();
@@ -75,10 +83,33 @@ const Tables = () => {
         return;
       }
   
-      // Otherwise, open modal
-      setPendingRow(item);
-      setShowAddDialog(true);
-      return;
+      const prevRow = metaData[metaData.length - 1];
+      const prevEndTime = prevRow 
+    ? new Date(prevRow.endTime) 
+    : new Date(new Date().setHours(0, 0, 0, 0));
+      const newEndTime = addTimePeriod(prevEndTime, computeDuration(item.duration));
+      
+      const newPendingRow = {
+        ...item,
+        prevEndTime: formatDate(prevEndTime),
+        prevTimePeriod: prevRow?.timePeriod || computeTimePeriod(prevEndTime, newEndTime),
+        prevFrameRate: prevRow?.frameRate || 0,
+        
+      };
+     // console.log(prevTimePeriod)
+      setPendingRow(newPendingRow);
+      
+
+  console.log("previous row endTime", prevEndTime)
+  console.log("new row endTime", newEndTime)
+   
+  setFormInputs({
+    ...formInputs,
+   
+  });
+
+  setShowAddDialog(true);
+  return;
     }
   
     // 🟢 Step 2 — Regular removal when dragging out of meta
@@ -86,7 +117,7 @@ const Tables = () => {
       setMetaData(prev => prev.filter(row => row.id !== item.id));
       toast.info(`Removed "${item.name}"`);
     }*/}
-
+   
     if (to === null) {
       // Delete operation
       setMetaData(prev => prev.filter(r => r.id !== item.id));
@@ -100,6 +131,7 @@ const Tables = () => {
     toast.success(`"${item.name}" copied to Meta`);
     return;
   }
+
   };
 
   // --- Helpers ---
@@ -108,15 +140,7 @@ const Tables = () => {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   };
 
-  const calculateDuration = (start, end) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diff = Math.floor((endDate - startDate) / 1000);
-    const hours = Math.floor(diff / 3600).toString().padStart(2, '0');
-    const minutes = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
-    const seconds = (diff % 60).toString().padStart(2, '0');
-    return `${hours}:${minutes}:${seconds}`;
-  };
+ 
 
   // --- Pagination & Other States ---
   const [activeTab, setActiveTab] = useState('primary');
@@ -182,84 +206,84 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
   bonus: false,
   timePeriod: { hour: 0, minute: 0, second: 0, frame: 0 }, });
 
-const handleAddConfirm = () => {
-  const item = pendingRow;
-  if (!item) return;
+  const handleAddConfirm = () => {
+    const item = pendingRow;
+    if (!item) return;
+  
+    setMetaData(prev => {
+      const updatedData = [...prev];
+  
+      // Compute startTime
+      const newStartTime = updatedData.length > 0
+        ? new Date(updatedData[updatedData.length - 1].endTime) // start after previous row
+        : new Date(new Date().setHours(0, 0, 0, 0)); // first row: midnight
+  
+      // Compute endTime = startTime + item.duration
+      const durationParts = item.duration.split(':'); // assuming "HH:MM:SS"
+      const durationMs = (
+        (+durationParts[0] || 0) * 3600 +
+        (+durationParts[1] || 0) * 60 +
+        (+durationParts[2] || 0)
+      ) * 1000;
+  
+      const newEndTime = new Date(newStartTime.getTime() + durationMs);
+  
+      // Compute timePeriod for this row (start → end)
+      const timePeriod = updatedData.length === 0
+        ? { hour: 0, minute: 0, second: 0, frame: 0 } // first row
+        : computeTimePeriod(newStartTime, newEndTime); // function to convert diff to object
+  
+        updatedData.push({
+          ...item,
+          startTime: formatDate(newStartTime),
+          endTime: formatDate(newEndTime),
+          duration: item.duration,
+          timePeriod, // this row's timePeriod
+          frameRate: item.frameRate, // compute only for THIS row
+          category: formInputs.category,
+          type: item.type,
+          repeat: formInputs.repeat,
+          isCommercial: formInputs.isCommercial,
+          bonus: formInputs.bonus,
+          prevFrameRate: updatedData.length > 0 ? updatedData[updatedData.length - 1].frameRate : 0 // preserve previous row's frameRate
+        });
+  
+      return updatedData;
+    });
+  
+    setShowAddDialog(false);
+    setPendingRow(null);
+    setFormInputs(prev => ({ ...prev, category: "", type: "", repeat: false, isCommercial: false, bonus: false }));
+  };
+  
+  const FPS = 25; // frames per second
 
-  setMetaData(prev => {
-    const updatedData = [...prev];
-    const userTime = formInputs.timePeriod;
+// --- Compute timePeriod from start and end dates
+function computeTimePeriod(start, end) {
+  let diffMs = end - start;
+  let totalFrames = Math.round(diffMs / (1000 / FPS)); // total frames
 
-    if (updatedData.length > 0) {
-      console.log("from if");
-      const lastIndex = updatedData.length - 1;
-      const lastItem = updatedData[lastIndex];
-      const lastPeriod = lastItem.timePeriod; //|| { hour: 0, minute: 0, second: 0, frame: 0 };
-      const lastStart = new Date(lastItem.startTime);
-      const lastEndTime = addTimePeriod(lastStart, formInputs.timePeriod);
+  const hour = Math.floor(totalFrames / (FPS * 3600));
+  totalFrames -= hour * FPS * 3600;
 
-      updatedData[lastIndex] = {
-        ...lastItem,
-        endTime: formatDate(lastEndTime),
-        duration: lastItem.duration || "",
-      };
+  const minute = Math.floor(totalFrames / (FPS * 60));
+  totalFrames -= minute * FPS * 60;
 
-      // New row starts exactly at lastEndTime
-      updatedData.push({
-        ...item,
-        startTime: formatDate(lastEndTime),
-        endTime: null,
-        duration: item.duration || "",
-        timePeriod: formInputs.timePeriod,
-        category: formInputs.category,
-        type: formInputs.type,
-        repeat: formInputs.repeat,
-        isCommercial: formInputs.isCommercial,
-        bonus: formInputs.bonus,
-      });
+  const second = Math.floor(totalFrames / FPS);
+  const frame = totalFrames % FPS;
 
-      console.log("from handleAddConfirm input time period", formInputs.timePeriod);
-    } else {
-      console.log("from else");
-      // First row → use user-provided time
-      const baseDate = new Date();
-      baseDate.setHours(0, 0, 0, 0); // start at midnight
-      const startTime = addTimePeriod(baseDate, formInputs.timePeriod);
+  const frameRate = ((hour * 3600 + minute * 60 + second) * FPS) + frame; // total frames
 
-      // add userTime as period
-      updatedData.push({
-        ...item,
-        startTime: formatDate(startTime),
-        endTime: null,
-        duration: item.duration || "",
-        timePeriod: formInputs.timePeriod,
-        category: formInputs.category,
-        type: formInputs.type,
-        repeat: formInputs.repeat,
-        isCommercial: formInputs.isCommercial,
-        bonus: formInputs.bonus,
-      });
+  return { hour, minute, second, frame, frameRate };
+}
 
-      console.log("from handleAddConfirm input time period", formInputs.timePeriod);
-    }
-    return updatedData;
-  });
-
-  setShowAddDialog(false);
-  setPendingRow(null);
-  setFormInputs({
-    ...formInputs,
-    timePeriod: { hour: 0, minute: 0, second: 0, frame: 0 },
-  });
-};
-
-function addTimePeriod(date, period) {
-  console.log("from addTime", date, period);
-  const d = new Date(date); // clone
+// --- Add a period to a date
+function addTimePeriod(date, period = { hour: 0, minute: 0, second: 0, frame: 0 }) {
   const totalMs =
     ((period.hour || 0) * 3600 + (period.minute || 0) * 60 + (period.second || 0)) * 1000 +
-    (period.frame || 0) * (1000 / 25); // frame to ms if 25fps
-  return new Date(d.getTime() + totalMs);
+    (period.frame || 0) * (1000 / FPS);
+
+  return new Date(new Date(date).getTime() + totalMs);
 }
 
 

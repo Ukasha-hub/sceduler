@@ -10,7 +10,7 @@ const tableData = [
     endDate: "2025-09-20",
     endTime: "11:15:00",
     duration: "00:45:00",
-    frameRate: "30fps",
+    frameRate: "20",
     isPaid: true,
   },
   {
@@ -24,7 +24,7 @@ const tableData = [
     endDate: "2025-09-21",
     endTime: "16:30:00",
     duration: "02:30:00",
-    frameRate: "30fps",
+    frameRate: "6",
     isPaid: false,
   },
   {
@@ -38,7 +38,7 @@ const tableData = [
     endDate: "2025-09-22",
     endTime: "09:45:00",
     duration: "00:30:00",
-    frameRate: "30fps",
+    frameRate: "15",
     isPaid: true,
   },
 ];

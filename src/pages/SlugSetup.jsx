@@ -164,7 +164,7 @@ export const SlugSetup = () => {
             </div>
           </div>
           <div className="card-footer flex flex-row justify-between gap-3 ">
-            <button type="button" className="btn btn-outline-primary flex-2">Edit</button>
+            <button type="button" className="btn btn-outline-primary flex-1">Edit</button>
             <button type="button" className="btn btn-outline-primary flex-1">Save</button>
           </div>
         </form>

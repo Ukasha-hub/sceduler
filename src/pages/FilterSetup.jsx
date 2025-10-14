@@ -141,33 +141,43 @@ const FilterSetup = () => {
         </div>
       </div>
 
-      <div className="card card-primary  w-full lg:w-1/3 self-start">
-        <div className="card-header">
-          <h3 className="card-title text-white">Filter Setup</h3>
-        </div>
-        <form className="">
-          <div className="card-body">
-            <div className="form-group mb-2">
-              <label className='pr-2'>Type</label>
-              <select
-              className="border rounded px-1 py-0.5  w-full md:w-32"
-              id="slot"
-            >
-              <option value=""></option>
-              <option value="Slot 1">Slot 1</option>
-              <option value="Slot 2">Slot 2</option>
-              <option value="Slot 3">Slot 3</option>
-            </select>
-            </div>
-           
-            
-          </div>
-          <div className="card-footer flex flex-row justify-between gap-3 ">
-           
-            <button type="button" className="btn btn-outline-primary flex-1">Save</button>
-          </div>
-        </form>
+      <div className="card card-primary w-full lg:w-1/3 self-start">
+  <div className="card-header">
+    <h3 className="card-title text-white">Filter Setup</h3>
+  </div>
+
+  <form>
+    <div className="card-body">
+      
+      {/* Type Field (Text Input instead of Select) */}
+      <div className="form-group mb-2">
+        <label className='pr-2'>Type</label>
+        <input
+          type="text"
+          className="border rounded px-1 py-0.5 w-full md:w-32"
+          id="type"
+          placeholder="Enter Type"
+        />
       </div>
+
+      {/* New Color Picker */}
+      <div className="form-group mb-2">
+        <label className='pr-2'>Color</label>
+        <input
+          type="color"
+          className="border rounded px-1 py-0.5 w-full md:w-32 h-8"
+          id="color"
+          defaultValue="#000000"
+        />
+      </div>
+
+    </div>
+
+    <div className="card-footer flex flex-row justify-between gap-3">
+      <button type="button" className="btn btn-outline-primary flex-1">Save</button>
+    </div>
+  </form>
+</div>
     </div>
   )
 }
