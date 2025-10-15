@@ -9,7 +9,7 @@ const AddDataModal = ({
   pendingRow
 }) => {
   if (!show) return null; // Don't render if not visible
-  console.log("PENDING ROW",pendingRow.prevEndTime)
+ // console.log("PENDING ROW",pendingRow.prevEndTime)
   const isFormValid = (() => {
     const currentType = formInputs.type || pendingRow?.type || ""; // ✅ normalize
   
@@ -304,48 +304,54 @@ const AddDataModal = ({
               prevFF = rawPrev ? (parseInt(rawPrev.slice(-2), 10) % FPS) : 0;
             }
     
-            // 2) Duration in H:M:S -> convert to frames (durationFrames)
-            const durationParts = pendingRow.duration?.split(":") || ["0","0","0"];
-            const durH = parseInt(durationParts[0] || "0", 10);
-            const durM = parseInt(durationParts[1] || "0", 10);
-            const durS = parseInt(durationParts[2] || "0", 10);
-            const durationFrames = ((durH * 3600) + (durM * 60) + durS) * FPS;
-    
-            // 3) Current row frame component (currFF) — try to extract from pendingRow.frameRate or pendingRow.timePeriod
-            let currFF = 0;
-            if (pendingRow?.timePeriod && typeof pendingRow.timePeriod.frame === "number") {
-              currFF = pendingRow.timePeriod.frame;
-            } else if (typeof pendingRow?.frameRate === "number") {
-              currFF = pendingRow.frameRate % FPS;
-            } else {
-              const rawCurr = String(pendingRow?.frameRate ?? "").replace(/\D/g, "");
-              currFF = rawCurr ? (parseInt(rawCurr.slice(-2), 10) % FPS) : 0;
-            }
-    
-            // 4) Convert previous end time to total frames
-            const prevTotalFrames = ((prevHH * 3600) + (prevMM * 60) + prevSS) * FPS + prevFF;
-    
-            // 5) Final total frames = prevTotalFrames + durationFrames + currFF
-            const finalTotalFrames = prevTotalFrames + durationFrames + currFF;
-    
-            // 6) Convert finalTotalFrames back to HH:MM:SS:FF allowing hours > 24
-            let remaining = finalTotalFrames;
-    
-            const finalHours = Math.floor(remaining / (FPS * 3600));
-            remaining -= finalHours * FPS * 3600;
-    
-            const finalMinutes = Math.floor(remaining / (FPS * 60));
-            remaining -= finalMinutes * FPS * 60;
-    
-            const finalSeconds = Math.floor(remaining / FPS);
-            const finalFrames = remaining % FPS;
-    
-            const hh = String(finalHours).padStart(2, "0");
-            const mm = String(finalMinutes).padStart(2, "0");
-            const ss = String(finalSeconds).padStart(2, "0");
-            const ff = String(finalFrames).padStart(2, "0");
-    
-            return `${hh}:${mm}:${ss}:${ff}`;
+            // 2) Duration in H:M:S -> convert to frames (durationFrames) **including current row's frame component**
+const durationParts = pendingRow.duration?.split(":") || ["0","0","0"];
+const durH = parseInt(durationParts[0] || "0", 10);
+const durM = parseInt(durationParts[1] || "0", 10);
+const durS = parseInt(durationParts[2] || "0", 10);
+
+// Extract current row's frame component (0..FPS-1)
+let currFrame = 0;
+//console.log("pendingRow", pendingRow)
+if (pendingRow?.timePeriod && typeof pendingRow.timePeriod.frame === "number") {
+  currFrame = Number(pendingRow.frameRate);
+} else if (typeof pendingRow?.frameRate === "number") {
+  // If frameRate stored as total frames (number), take modulo FPS to get frame component
+  currFrame = Number(pendingRow.frameRate);
+} else if (typeof pendingRow?.frameRate === "string") {
+  // If frameRate stored as "HH:MM:SS:FF" or any string, extract last two digits
+  const rawCurr = String(pendingRow.frameRate).replace(/\D/g, "");
+ // console.log("rawCurr",rawCurr)
+  currFrame = Number(pendingRow.frameRate);
+} else {
+  currFrame = Number(pendingRow.frameRate);
+}
+
+// Duration frames = seconds part converted to frames + current frame component
+const durationFrames = ((durH * 3600) + (durM * 60) + durS) * FPS + (currFrame || 0);
+// console.log("currFrame", currFrame)
+// prevTotalFrames (previous end HH:MM:SS:FF -> total frames)
+const prevTotalFrames = ((prevHH * 3600) + (prevMM * 60) + prevSS) * FPS + (prevFF || 0);
+
+// final total frames = previous end + duration (including curr frame)
+const finalTotalFrames = prevTotalFrames + durationFrames;
+
+// convert back to HH:MM:SS:FF (hours allowed > 24)
+let remaining = finalTotalFrames;
+//console.log("remaining", remaining)
+const finalHours = Math.floor(remaining / (FPS * 3600));
+remaining -= finalHours * FPS * 3600;
+const finalMinutes = Math.floor(remaining / (FPS * 60));
+remaining -= finalMinutes * FPS * 60;
+const finalSeconds = Math.floor(remaining / FPS);
+const finalFrames = remaining % FPS;
+//console.log("finalFrames", finalFrames)
+
+const hh = String(finalHours).padStart(2, "0");
+const mm = String(finalMinutes).padStart(2, "0");
+const ss = String(finalSeconds).padStart(2, "0");
+const ff = String(finalFrames).padStart(2, "0");
+return `${hh}:${mm}:${ss}:${ff}`;
           })()
         : ""
     }

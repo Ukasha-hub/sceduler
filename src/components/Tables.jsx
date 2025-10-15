@@ -256,9 +256,12 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
       const baseStart = idx > 0 ? new Date(updated[idx - 1].endTime) : new Date(new Date().setHours(0, 0, 0, 0));
       const durationMs = computeDuration(item.duration);
       const newEnd = new Date(baseStart.getTime() + durationMs);
-
-      const timePeriod = computeTimePeriod(baseStart, newEnd);
-
+      const currFrameRate= Number(item.frameRate)
+      console.log("currFrameRate", currFrameRate)
+      const prevFrameRate= idx > 0 ? Number(updated[idx - 1].frameRate) : 0;
+      console.log("currFrameRate, prevFrameRate", currFrameRate, prevFrameRate)
+      const timePeriod = computeTimePeriod(baseStart, newEnd, currFrameRate, prevFrameRate);
+     console.log("timePeriod", timePeriod)
       const rowToInsert = {
         ...item,
         startTime: formatDate(baseStart),
@@ -289,10 +292,31 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
   const FPS = 25; // frames per second
 
 // --- Compute timePeriod from start and end dates
-function computeTimePeriod(start, end) {
-  let diffMs = end - start;
-  let totalFrames = Math.round(diffMs / (1000 / FPS)); // total frames
+function computeTimePeriod(start, end, currFrameRate , prevFrameRate ) {
+  const FPS = 25;
 
+  // Ensure Date format
+  const s = (start instanceof Date) ? start : new Date(start);
+  const e = (end instanceof Date) ? end : new Date(end);
+
+  //console.log("s,e", s.getTime(),e.getMinutes())
+
+  // ✅ Convert start time → totalSeconds
+  const startTotalSeconds = s.getHours() * 3600 + s.getMinutes() * 60 + s.getSeconds();
+ 
+  // ✅ Convert end time → totalSeconds
+  const endTotalSeconds = e.getHours() * 3600 + e.getMinutes() * 60 + e.getSeconds();
+   // console.log("endTotalSeconds", endTotalSeconds )
+  // ✅ Convert to frames (seconds × FPS)
+  const startFrames = startTotalSeconds * FPS + (prevFrameRate );
+  const endFrames   = endTotalSeconds   * FPS + (currFrameRate );
+  console.log("prevFrameRate ", prevFrameRate )
+  console.log("currFrameRate ", currFrameRate )
+  // ✅ Compute elapsed frames
+  let totalFrames = endFrames - startFrames;
+  if (totalFrames < 0) totalFrames = 0;
+
+  // ✅ Convert back to HH:MM:SS:FF
   const hour = Math.floor(totalFrames / (FPS * 3600));
   totalFrames -= hour * FPS * 3600;
 
@@ -300,13 +324,12 @@ function computeTimePeriod(start, end) {
   totalFrames -= minute * FPS * 60;
 
   const second = Math.floor(totalFrames / FPS);
-  const frame = totalFrames % FPS;
+  const frameRate = totalFrames % FPS;
 
-  const frameRate = ((hour * 3600 + minute * 60 + second) * FPS) + frame; // total frames
+  console.log("Time:",hour, minute, second,  frameRate )
 
-  return { hour, minute, second, frame, frameRate };
+  return { hour, minute, second,  frameRate };
 }
-
 // --- Add a period to a date
 function addTimePeriod(date, period = { hour: 0, minute: 0, second: 0, frame: 0 }) {
   const totalMs =
