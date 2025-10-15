@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ROUTES } from "../routes";
-import Tables from "../components/Tables";
+
 import Rundown from "../pages/Rundown";
 import { SettingsScheduler } from "../pages/SettingsScheduler";
 import { SlugSetup } from "../pages/SlugSetup";
 import FilterSetup from "../pages/FilterSetup";
+import SchedulerTable from "../pages/SchedulerTable";
+import ClearSchedule from "../pages/ClearSchedule";
+import ServerSetup from "../pages/ServerSetup";
 
 function SideNav({ onOpenTab }) {
   const location = useLocation();
@@ -73,7 +76,7 @@ function SideNav({ onOpenTab }) {
             <li className="nav-item">
               <button
                 className="nav-link text-left w-100"
-                onClick={() => onOpenTab("dashboard", "Scheduler", <Tables />)}
+                onClick={() => onOpenTab("dashboard", "Scheduler", <SchedulerTable></SchedulerTable>)}
               >
                 <i className="nav-icon fas fa-tachometer-alt text-white" />
                 <p className="text-white">Scheduler</p>
@@ -151,6 +154,29 @@ function SideNav({ onOpenTab }) {
                   >
                     <i className="far fa-circle nav-icon text-white" />
                     <p className="text-white">Filter Setup</p>
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className="nav-link text-left w-100"
+                    onClick={() =>
+                      onOpenTab("clearSchedule", "Clear Schedule", <ClearSchedule></ClearSchedule>
+                      )
+                    }
+                  >
+                    <i className="far fa-circle nav-icon text-white" />
+                    <p className="text-white">Clear Schedule</p>
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className="nav-link text-left w-100"
+                    onClick={() =>
+                      onOpenTab("serverSetup", "Server Setup", <ServerSetup></ServerSetup>)
+                    }
+                  >
+                    <i className="far fa-circle nav-icon text-white" />
+                    <p className="text-white">Server Setup</p>
                   </button>
                 </li>
               </ul>

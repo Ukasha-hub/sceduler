@@ -9,7 +9,7 @@ const AddDataModal = ({
   pendingRow
 }) => {
   if (!show) return null; // Don't render if not visible
-
+  console.log("PENDING ROW",pendingRow.prevEndTime)
   const isFormValid = (() => {
     const currentType = formInputs.type || pendingRow?.type || ""; // ✅ normalize
   
@@ -33,7 +33,14 @@ const AddDataModal = ({
       <div className="modal-dialog" style={{ maxWidth: "40%" }}>
         <div className="modal-content text-xs" style={{ fontSize: "0.75rem" }}>
           <div className="modal-header bg-blue-400 p-2">
-            <h5 className="modal-title text-white text-lg">Add New Data</h5>
+          <h5 className="modal-title text-white text-lg">
+  Add New Data{" "}
+  {pendingRow?.__insertAfterName
+    ? `(Insert After: ${pendingRow.__insertAfterName})`
+    : `(Append at End)`
+  }
+</h5>
+
             <button className="close text-white" onClick={onClose}>
               &times;
             </button>
@@ -193,12 +200,31 @@ const AddDataModal = ({
       <input
         type="text"
         className="form-control form-control-sm text-xs"
+        
         value={
+          // For H/M/S: show parts of previous end time when available, otherwise 00
           idx < 3
-            ? pendingRow?.prevEndTime
-              ? pendingRow.prevEndTime.split(" ")[1].split(":")[idx] // HH, MM, SS
-              : "00"
-            : pendingRow?.prevFrameRate || "0" // frame from previous row
+            ? (pendingRow?.prevEndTime
+                ? pendingRow.prevEndTime.split(" ")[1].split(":")[idx]
+                : "00")
+            // For frame: derive previous frame component robustly
+            : (() => {
+                const FPS = 25;
+                // If a structured prevTimePeriod exists, prefer its frame
+                if (pendingRow?.prevTimePeriod && typeof pendingRow.prevTimePeriod.frame === "number") {
+                  return String(pendingRow.prevTimePeriod.frame).padStart(2, "0");
+                }
+                // If prevFrameRate already stored as numeric frame component
+                if (typeof pendingRow?.prevFrameRate === "number") {
+                  return String(pendingRow.prevFrameRate % FPS).padStart(2, "0");
+                }
+                // Fallback: extract digits from a string and use last two digits
+                const raw = String(pendingRow?.prevFrameRate ?? "").replace(/\D/g, "");
+                if (raw.length === 0) return "00";
+                const lastTwo = raw.slice(-2);
+                const parsed = parseInt(lastTwo, 10) || 0;
+                return String(parsed % FPS).padStart(2, "0");
+              })()
         }
         readOnly
       />
@@ -254,35 +280,71 @@ const AddDataModal = ({
     value={
       pendingRow
         ? (() => {
-            const startTime = pendingRow.prevEndTime
-              ? new Date(pendingRow.prevEndTime)
-              : new Date(0);
-
+            const FPS = 25;
+    
+            // 1) Parse previous end time into components HH,MM,SS,FF
+            // prevEndTime stored as "YYYY-MM-DD HH:MM:SS" (no frame) — but we also have prevFrameRate
+            let prevHH = 0, prevMM = 0, prevSS = 0, prevFF = 0;
+            if (pendingRow?.prevEndTime) {
+              const parts = pendingRow.prevEndTime.split(" ");
+              if (parts[1]) {
+                const t = parts[1].split(":");
+                prevHH = parseInt(t[0] || "0", 10);
+                prevMM = parseInt(t[1] || "0", 10);
+                prevSS = parseInt(t[2] || "0", 10);
+              }
+            }
+            // prev frame: prefer prevTimePeriod.frame, then prevFrameRate (component)
+            if (pendingRow?.prevTimePeriod && typeof pendingRow.prevTimePeriod.frame === "number") {
+              prevFF = pendingRow.prevTimePeriod.frame;
+            } else if (typeof pendingRow?.prevFrameRate === "number") {
+              prevFF = pendingRow.prevFrameRate % FPS;
+            } else {
+              const rawPrev = String(pendingRow?.prevFrameRate ?? "").replace(/\D/g, "");
+              prevFF = rawPrev ? (parseInt(rawPrev.slice(-2), 10) % FPS) : 0;
+            }
+    
+            // 2) Duration in H:M:S -> convert to frames (durationFrames)
             const durationParts = pendingRow.duration?.split(":") || ["0","0","0"];
-            const hours = parseInt(durationParts[0] || "0");
-            const minutes = parseInt(durationParts[1] || "0");
-            const seconds = parseInt(durationParts[2] || "0");
-
-            const newEnd = new Date(startTime);
-            newEnd.setHours(newEnd.getHours() + hours);
-            newEnd.setMinutes(newEnd.getMinutes() + minutes);
-            newEnd.setSeconds(newEnd.getSeconds() + seconds);
-
-            // Calculate frame as previous frame + current row frame
-            const prevFrame = parseInt(pendingRow.prevFrameRate || "0");
-            const currFrame = parseInt(pendingRow.frameRate || "0");
-            let totalFrame = prevFrame + currFrame;
-
-            // Normalize frame if exceeds 24 (25fps)
-            const extraSeconds = Math.floor(totalFrame / 25);
-            totalFrame = totalFrame % 25;
-            newEnd.setSeconds(newEnd.getSeconds() + extraSeconds);
-
-            const hh = String(newEnd.getHours()).padStart(2, "0");
-            const mm = String(newEnd.getMinutes()).padStart(2, "0");
-            const ss = String(newEnd.getSeconds()).padStart(2, "0");
-            const ff = String(totalFrame).padStart(2, "0");
-
+            const durH = parseInt(durationParts[0] || "0", 10);
+            const durM = parseInt(durationParts[1] || "0", 10);
+            const durS = parseInt(durationParts[2] || "0", 10);
+            const durationFrames = ((durH * 3600) + (durM * 60) + durS) * FPS;
+    
+            // 3) Current row frame component (currFF) — try to extract from pendingRow.frameRate or pendingRow.timePeriod
+            let currFF = 0;
+            if (pendingRow?.timePeriod && typeof pendingRow.timePeriod.frame === "number") {
+              currFF = pendingRow.timePeriod.frame;
+            } else if (typeof pendingRow?.frameRate === "number") {
+              currFF = pendingRow.frameRate % FPS;
+            } else {
+              const rawCurr = String(pendingRow?.frameRate ?? "").replace(/\D/g, "");
+              currFF = rawCurr ? (parseInt(rawCurr.slice(-2), 10) % FPS) : 0;
+            }
+    
+            // 4) Convert previous end time to total frames
+            const prevTotalFrames = ((prevHH * 3600) + (prevMM * 60) + prevSS) * FPS + prevFF;
+    
+            // 5) Final total frames = prevTotalFrames + durationFrames + currFF
+            const finalTotalFrames = prevTotalFrames + durationFrames + currFF;
+    
+            // 6) Convert finalTotalFrames back to HH:MM:SS:FF allowing hours > 24
+            let remaining = finalTotalFrames;
+    
+            const finalHours = Math.floor(remaining / (FPS * 3600));
+            remaining -= finalHours * FPS * 3600;
+    
+            const finalMinutes = Math.floor(remaining / (FPS * 60));
+            remaining -= finalMinutes * FPS * 60;
+    
+            const finalSeconds = Math.floor(remaining / FPS);
+            const finalFrames = remaining % FPS;
+    
+            const hh = String(finalHours).padStart(2, "0");
+            const mm = String(finalMinutes).padStart(2, "0");
+            const ss = String(finalSeconds).padStart(2, "0");
+            const ff = String(finalFrames).padStart(2, "0");
+    
             return `${hh}:${mm}:${ss}:${ff}`;
           })()
         : ""

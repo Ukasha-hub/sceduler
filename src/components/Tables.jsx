@@ -70,75 +70,112 @@ const Tables = () => {
     const [hours, minutes, seconds] = parts;
     return ((hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0)) * 1000;
   };
-  // --- Move Row Logic ---
-  const moveRow = (item, from, to) => {
-    const now = new Date();
-  
-    // 🟡 Step 1 — Handle drag from vistria → meta
+  // --- Move Row Logic (modified to accept insertIndex)
+  const moveRow = (item, from, to, insertIndex = null) => {
     if (from === 'vistria' && to === 'meta') {
-      // ✅ If already exists, skip modal and notify
       const alreadyExists = metaData.some(row => row.id === item.id);
       if (alreadyExists) {
         toast.info(`"${item.name}" is already in the Meta table`);
         return;
       }
-  
-      const prevRow = metaData[metaData.length - 1];
-      const prevEndTime = prevRow 
+    
+      const idx = (typeof insertIndex === 'number') ? insertIndex : metaData.length;
+      const prevRow = idx > 0 ? metaData[idx - 1] : null;
+    
+      // Pick a safe prevEndTime (if prevRow exists use its endTime, otherwise midnight)
+      const prevEndTimeDate = prevRow 
     ? new Date(prevRow.endTime) 
-    : new Date(new Date().setHours(0, 0, 0, 0));
-      const newEndTime = addTimePeriod(prevEndTime, computeDuration(item.duration));
-      
-      const newPendingRow = {
+    : new Date(); // We'll manually set HH:MM:SS to 0 for local time
+
+if (!prevRow) {
+  prevEndTimeDate.setHours(0, 0, 0, 0); // midnight local time
+}
+
+// Format as "YYYY-MM-DD HH:MM:SS" using local time
+const pad = (n) => String(n).padStart(2, "0");
+const prevEndTimeStr = `${prevEndTimeDate.getFullYear()}-${pad(prevEndTimeDate.getMonth()+1)}-${pad(prevEndTimeDate.getDate())} ${pad(prevEndTimeDate.getHours())}:${pad(prevEndTimeDate.getMinutes())}:${pad(prevEndTimeDate.getSeconds())}`;
+      console.log("prevEndTimeDate", prevEndTimeDate)
+      const tentative = {
         ...item,
-        prevEndTime: formatDate(prevEndTime),
-        prevTimePeriod: prevRow?.timePeriod || computeTimePeriod(prevEndTime, newEndTime),
-        prevFrameRate: prevRow?.frameRate || 0,
+        // store parse-safe prevEndTime as "YYYY-MM-DD HH:MM:SS"
+        prevEndTime: prevEndTimeStr,
+        
+        // prefer structured prevTimePeriod if available
+        prevTimePeriod: prevRow?.timePeriod || null,
+        // ensure for first insertion the shown timePeriod is zeros
+        timePeriod: idx === 0 ? { hour: 0, minute: 0, second: 0, frame: 0 } : (item.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 }),
+        // prevFrameRate should be the *frame component (0..24)* from previous row
+        prevFrameRate: (() => {
+          const FPS = 25;
+        
+          if (!prevRow) return 0; // first row
+        
+          // Use previous row's actual frameRate
+          const prevFrameRaw = prevRow.frameRate;
+        
+          if (typeof prevFrameRaw === "number") return prevFrameRaw % FPS;
+        
+          if (typeof prevFrameRaw === "string") {
+            const raw = prevFrameRaw.replace(/\D/g, "");
+            return Number(raw.slice(-2)) || 0;
+          }
+        
+          return 0;
+        })(),
+        __insertIndex: idx,
+        __insertAfterId: prevRow ? prevRow.id : null,
+        __insertAfterName: prevRow ? prevRow.name : null,
         
       };
-     // console.log(prevTimePeriod)
-      setPendingRow(newPendingRow);
-      
-
-  console.log("previous row endTime", prevEndTime)
-  console.log("new row endTime", newEndTime)
-   
-  setFormInputs({
-    ...formInputs,
-   
-  });
-
-  setShowAddDialog(true);
-  return;
-    }
-  
-    // 🟢 Step 2 — Regular removal when dragging out of meta
-    {/*if (from === 'meta') {
-      setMetaData(prev => prev.filter(row => row.id !== item.id));
-      toast.info(`Removed "${item.name}"`);
-    }*/}
-   
-    if (to === null) {
-      // Delete operation
-      setMetaData(prev => prev.filter(r => r.id !== item.id));
-      toast.info(`Deleted "${item.name}"`);
+      console.log("tentative", tentative)
+      setPendingRow(tentative);
+      setFormInputs(prev => ({ ...prev }));
+      setShowAddDialog(true);
       return;
     }
-    
-
-     if (to === "metaCopy") {
-    setMetaData(prev => [...prev, item]);
-    toast.success(`"${item.name}" copied to Meta`);
-    return;
-  }
-
   };
 
   // --- Helpers ---
   const formatDate = date => {
     const pad = n => n.toString().padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    const d = new Date(date);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
+
+  // --- NEW: recalcSchedule to recompute start/end/timePeriod/frame rates for all rows
+  const recalcSchedule = (arr) => {
+    const updated = arr.map(r => ({ ...r })); // shallow clone
+    const midnight = new Date(new Date().setHours(0,0,0,0));
+
+    for (let i = 0; i < updated.length; i++) {
+      const prev = i > 0 ? updated[i - 1] : null;
+
+      const startDate = prev ? new Date(prev.endTime) : new Date(midnight);
+      // Determine duration period: prefer timePeriod if present, otherwise parse duration string (HH:MM:SS)
+      let period = null;
+      if (updated[i].timePeriod && typeof updated[i].timePeriod === 'object' && ('hour' in updated[i].timePeriod)) {
+        period = updated[i].timePeriod;
+      } else if (updated[i].duration) {
+        const parts = updated[i].duration.split(':').map(p => parseInt(p, 10) || 0);
+        period = { hour: parts[0] || 0, minute: parts[1] || 0, second: parts[2] || 0, frame: updated[i].frameRate ? (updated[i].frameRate % FPS) : 0 };
+      } else {
+        period = { hour: 0, minute: 0, second: 0, frame: 0 };
+      }
+
+      const endDate = addTimePeriod(startDate, period);
+      const tp = computeTimePeriod(startDate, endDate);
+
+      updated[i].startTime = formatDate(startDate);
+      updated[i].endTime = formatDate(endDate);
+      updated[i].timePeriod = { hour: tp.hour, minute: tp.minute, second: tp.second, frame: tp.frame, frameRate: tp.frameRate };
+      updated[i].frameRate = tp.frameRate; // total frames for this row
+      updated[i].prevFrameRate = prev ? prev.frameRate : 0;
+      updated[i].prevEndTime = prev ? formatDate(prev.endTime) : formatDate(midnight);
+    }
+
+    return updated;
+  };
+
 
  
 
@@ -206,51 +243,44 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
   bonus: false,
   timePeriod: { hour: 0, minute: 0, second: 0, frame: 0 }, });
 
+  // --- handleAddConfirm: insert pendingRow at the __insertIndex (if provided)
   const handleAddConfirm = () => {
     const item = pendingRow;
     if (!item) return;
-  
+
     setMetaData(prev => {
-      const updatedData = [...prev];
-  
-      // Compute startTime
-      const newStartTime = updatedData.length > 0
-        ? new Date(updatedData[updatedData.length - 1].endTime) // start after previous row
-        : new Date(new Date().setHours(0, 0, 0, 0)); // first row: midnight
-  
-      // Compute endTime = startTime + item.duration
-      const durationParts = item.duration.split(':'); // assuming "HH:MM:SS"
-      const durationMs = (
-        (+durationParts[0] || 0) * 3600 +
-        (+durationParts[1] || 0) * 60 +
-        (+durationParts[2] || 0)
-      ) * 1000;
-  
-      const newEndTime = new Date(newStartTime.getTime() + durationMs);
-  
-      // Compute timePeriod for this row (start → end)
-      const timePeriod = updatedData.length === 0
-        ? { hour: 0, minute: 0, second: 0, frame: 0 } // first row
-        : computeTimePeriod(newStartTime, newEndTime); // function to convert diff to object
-  
-        updatedData.push({
-          ...item,
-          startTime: formatDate(newStartTime),
-          endTime: formatDate(newEndTime),
-          duration: item.duration,
-          timePeriod, // this row's timePeriod
-          frameRate: item.frameRate, // compute only for THIS row
-          category: formInputs.category,
-          type: item.type,
-          repeat: formInputs.repeat,
-          isCommercial: formInputs.isCommercial,
-          bonus: formInputs.bonus,
-          prevFrameRate: updatedData.length > 0 ? updatedData[updatedData.length - 1].frameRate : 0 // preserve previous row's frameRate
-        });
-  
-      return updatedData;
+      const updated = [...prev];
+      const idx = (typeof item.__insertIndex === 'number') ? item.__insertIndex : updated.length;
+
+      // Compute startTime based on previous row at idx - 1
+      const baseStart = idx > 0 ? new Date(updated[idx - 1].endTime) : new Date(new Date().setHours(0, 0, 0, 0));
+      const durationMs = computeDuration(item.duration);
+      const newEnd = new Date(baseStart.getTime() + durationMs);
+
+      const timePeriod = computeTimePeriod(baseStart, newEnd);
+
+      const rowToInsert = {
+        ...item,
+        startTime: formatDate(baseStart),
+        endTime: formatDate(newEnd),
+        duration: item.duration,
+        timePeriod,
+        frameRate: timePeriod.frameRate,
+        category: formInputs.category,
+        type: item.type,
+        repeat: formInputs.repeat,
+        isCommercial: formInputs.isCommercial,
+        bonus: formInputs.bonus,
+        prevFrameRate: idx > 0 ? updated[idx - 1].frameRate : 0,
+        prevEndTime: idx > 0 ? formatDate(updated[idx - 1].endTime) : formatDate(new Date(new Date().setHours(0, 0, 0, 0)))
+      };
+
+      updated.splice(idx, 0, rowToInsert);
+
+      // Recalculate everything after insertion
+      return recalcSchedule(updated);
     });
-  
+
     setShowAddDialog(false);
     setPendingRow(null);
     setFormInputs(prev => ({ ...prev, category: "", type: "", repeat: false, isCommercial: false, bonus: false }));
@@ -446,27 +476,27 @@ const getToday = () => {
               )}
               <div className="card rundown-table-card justify-center">
                 <div className="flex justify-between items-center bg-gray-100 border-b px-3 py-1">
-                  <div className='flex flex-row justify-start gap-3'>
-                    <div className="form-group flex gap-0">
-                      <label>Date:</label>
+                  <div className='flex flex-row justify-start h-10 gap-3'>
+                    <div className="form-group flex gap-2">
+                      <label className='mt-2'>Date:</label>
                       <input
                         type="date"
-                        className="form-control text-xs"
+                        className="form-control text-xs w-30"
                         id="fromDate"
                         defaultValue={getToday()}
                       />
                     </div>
-                   <button className="btn btn-xs text-xs text-black bg-green-300 h-9 p-1" onClick={() => downloadCSV(metaData)}>
-  <FaFileCsv /> CSV
+                   <button className="btn btn-xs text-xs text-black bg-green-300 lw-15 h-9 p-1" onClick={() => downloadCSV(metaData)}>
+   <span className='flex flex-col lg:flex-row gap-2'> <FaFileCsv className='h-4'/> CSV</span>
 </button>
                   
-                     <button className="btn btn-xs text-xs text-black bg-red-300 h-9 p-1" onClick={() => downloadPDF()}>
-                     <FaFilePdf />PDF
+                     <button className="btn btn-xs text-xs text-black bg-red-300 w-15  h-9 p-1" onClick={() => downloadPDF()}>
+                     <span className='flex flex-col lg:flex-row gap-2'> <FaFilePdf className='h-4'/> PDF</span>
 </button>
                   </div>
                    
                   <div>
-                  <button className="btn btn-sm btn-primary" onClick={() => setShowArchive(prev => !prev)}>{showArchive ? '−' : '+'}</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => setShowArchive(prev => !prev)}>{showArchive ? '+' : '-'}</button>
                   </div>
                   
                 </div>
@@ -505,11 +535,11 @@ const getToday = () => {
       {showAddDialog && (
   <AddDataModal
   show={showAddDialog}
-  onClose={() => setShowAddDialog(false)}
-  onConfirm={handleAddConfirm}
-  formInputs={formInputs}
-  setFormInputs={setFormInputs}
-  pendingRow={pendingRow}
+          onClose={() => setShowAddDialog(false)}
+          onConfirm={handleAddConfirm}
+          formInputs={formInputs}
+          setFormInputs={setFormInputs}
+          pendingRow={pendingRow}
 />
 
 )}

@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 
 const initialTableData = [
-  { id: 1, engine: "Trident", browser: "IE 4.0", platform: "Win 95+", version: "4", grade: "X" },
-  { id: 2, engine: "Trident", browser: "IE 5.0", platform: "Win 95+", version: "5", grade: "C" },
-  { id: 3, engine: "Webkit", browser: "Safari 1.3", platform: "OSX.3", version: "312.8", grade: "A" },
-  { id: 4, engine: "Webkit", browser: "Safari 2.0", platform: "OSX.4+", version: "419.3", grade: "A" },
-  { id: 5, engine: "Webkit", browser: "Safari 3.0", platform: "OSX.4+", version: "522.1", grade: "A" },
-  { id: 6, engine: "Webkit", browser: "OmniWeb 5.5", platform: "OSX.4+", version: "420", grade: "A" },
-  { id: 7, engine: "Other browsers", browser: "All others", platform: "-", version: "-", grade: "U" },
+  { id: 1, engine: "Trident", browser: " স্থল স্লাগ", platform: " স্থল স্লাগ", },
+  { id: 2, engine: "Trident", browser: " আচাটিনেলোইডিয়া", platform: " আচাটিনেলোইডিয়া", },
+  { id: 3, engine: "Webkit", browser: "কোচলিকোপয়েডিয়া ", platform: "কোচলিকোপয়েডিয়া ",  },
+  { id: 4, engine: "Webkit", browser: "পারটুলোইডিয়া ", platform: "পারটুলোইডিয়া ", },
+  { id: 5, engine: "Webkit", browser: "পিউপিলোইডিয়া ", platform: "পিউপিলোইডিয়া ", },
+  { id: 6, engine: "Webkit", browser: "OmniWeb 5.5", platform: "OSX.4+", },
+  { id: 7, engine: "Other browsers", browser: "All others", platform: "-",  },
 ];
 
 export const SlugSetup = () => {
@@ -83,11 +83,10 @@ export const SlugSetup = () => {
                       onChange={handleSelectAll}
                     />
                   </th>
-                  <th>Rendering engine</th>
-                  <th>Browser</th>
-                  <th>Platform(s)</th>
-                  <th>Engine version</th>
-                  <th>CSS grade</th>
+                  <th>Programee Code</th>
+                  <th>Slug Name</th>
+                  <th>Slug Name Repeat</th>
+                
                 </tr>
               </thead>
               <tbody>
@@ -109,8 +108,7 @@ export const SlugSetup = () => {
                     <td>{row.engine}</td>
                     <td>{row.browser}</td>
                     <td>{row.platform}</td>
-                    <td>{row.version}</td>
-                    <td>{row.grade}</td>
+                  
                   </tr>
                 ))}
               </tbody>

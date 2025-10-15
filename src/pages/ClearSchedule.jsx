@@ -1,61 +1,61 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 const initialTableData = [
-    { id: 1, engine: "PROMO", browser: "#07865F", },
-    { id: 2, engine: "COM", browser: "IE 5.0",  },
-    { id: 3, engine: "Webkit", browser: "Safari 1.3",  },
-    { id: 4, engine: "Webkit", browser: "Safari 2.0",  },
-    { id: 5, engine: "Webkit", browser: "Safari 3.0", },
-    { id: 6, engine: "Webkit", browser: "OmniWeb 5.5", },
-    { id: 7, engine: "Other browsers", browser: "All others",  },
+    { id: 1, engine: "Trident", browser: "IE 4.0", platform: "Win 95+", version: "4", grade: "X" },
+    { id: 2, engine: "Trident", browser: "IE 5.0", platform: "Win 95+", version: "5", grade: "C" },
+    { id: 3, engine: "Webkit", browser: "Safari 1.3", platform: "OSX.3", version: "312.8", grade: "A" },
+    { id: 4, engine: "Webkit", browser: "Safari 2.0", platform: "OSX.4+", version: "419.3", grade: "A" },
+    { id: 5, engine: "Webkit", browser: "Safari 3.0", platform: "OSX.4+", version: "522.1", grade: "A" },
+    { id: 6, engine: "Webkit", browser: "OmniWeb 5.5", platform: "OSX.4+", version: "420", grade: "A" },
+    { id: 7, engine: "Other browsers", browser: "All others", platform: "-", version: "-", grade: "U" },
   ];
 
-const FilterSetup = () => {
-    const [tableData, setTableData] = useState(initialTableData);
-      const [selectedRows, setSelectedRows] = useState([]);
-      const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rowId: null });
-    
-      const tableRef = useRef();
-    
-      // Hide context menu on click outside
-      useEffect(() => {
-        const handleClick = () => setContextMenu({ ...contextMenu, visible: false });
-        window.addEventListener("click", handleClick);
-        return () => window.removeEventListener("click", handleClick);
-      }, [contextMenu]);
-    
-      // Select all
-      const handleSelectAll = () => {
-        if (selectedRows.length === tableData.length) {
-          setSelectedRows([]);
-        } else {
-          setSelectedRows(tableData.map((row) => row.id));
-        }
-      };
-    
-      // Row click selection
-      const handleRowClick = (id) => {
-        if (selectedRows.includes(id)) {
-          setSelectedRows(selectedRows.filter((rowId) => rowId !== id));
-        } else {
-          setSelectedRows([...selectedRows, id]);
-        }
-      };
-    
-      // Right-click context menu
-      const handleRightClick = (e, rowId) => {
-        e.preventDefault();
-      
-        const tableRect = tableRef.current.getBoundingClientRect();
-        const x = e.clientX - tableRect.left; // relative X
-        const y = e.clientY - tableRect.top;  // relative Y
-      
-        setContextMenu({ visible: true, x, y, rowId });
-      
-        if (!selectedRows.includes(rowId)) setSelectedRows([rowId]);
-      };
-    
-      // Delete selected rows
+const ClearSchedule = () => {
+     const [tableData, setTableData] = useState(initialTableData);
+          const [selectedRows, setSelectedRows] = useState([]);
+          const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rowId: null });
+        
+          const tableRef = useRef();
+        
+          // Hide context menu on click outside
+          useEffect(() => {
+            const handleClick = () => setContextMenu({ ...contextMenu, visible: false });
+            window.addEventListener("click", handleClick);
+            return () => window.removeEventListener("click", handleClick);
+          }, [contextMenu]);
+        
+          // Select all
+          const handleSelectAll = () => {
+            if (selectedRows.length === tableData.length) {
+              setSelectedRows([]);
+            } else {
+              setSelectedRows(tableData.map((row) => row.id));
+            }
+          };
+        
+          // Row click selection
+          const handleRowClick = (id) => {
+            if (selectedRows.includes(id)) {
+              setSelectedRows(selectedRows.filter((rowId) => rowId !== id));
+            } else {
+              setSelectedRows([...selectedRows, id]);
+            }
+          };
+        
+          // Right-click context menu
+          const handleRightClick = (e, rowId) => {
+            e.preventDefault();
+          
+            const tableRect = tableRef.current.getBoundingClientRect();
+            const x = e.clientX - tableRect.left; // relative X
+            const y = e.clientY - tableRect.top;  // relative Y
+          
+            setContextMenu({ visible: true, x, y, rowId });
+          
+            if (!selectedRows.includes(rowId)) setSelectedRows([rowId]);
+          };
+
+           // Delete selected rows
       const handleDeleteRows = () => {
         setTableData(tableData.filter((row) => !selectedRows.includes(row.id)));
         setSelectedRows([]);
@@ -81,9 +81,10 @@ const FilterSetup = () => {
                       onChange={handleSelectAll}
                     />
                   </th>
-                  <th>Type</th>
-                  <th>Color</th>
-                 
+                  <th>Server 1</th>
+                  <th>Server 2</th>
+                  <th>Server 3</th>
+                  
                 </tr>
               </thead>
               <tbody>
@@ -104,7 +105,8 @@ const FilterSetup = () => {
                     </td>
                     <td>{row.engine}</td>
                     <td>{row.browser}</td>
-                    
+                    <td>{row.platform}</td>
+                 
                   </tr>
                 ))}
               </tbody>
@@ -139,7 +141,7 @@ const FilterSetup = () => {
 
       <div className="card card-primary w-full lg:w-1/3 self-start">
   <div className="card-header">
-    <h3 className="card-title text-white">Filter Setup</h3>
+    <h3 className="card-title text-white">Clear Schedule</h3>
   </div>
 
   <form>
@@ -147,25 +149,17 @@ const FilterSetup = () => {
       
       {/* Type Field (Text Input instead of Select) */}
       <div className="form-group mb-2">
-        <label className='pr-2'>Type</label>
+        <label className='pr-2'>To Date</label>
         <input
           type="text"
-          className="border rounded px-1 py-0.5 h-7 w-75 "
+         className="border rounded px-1 py-0.5 h-7 w-75 "
           id="type"
           placeholder="Enter Type"
         />
       </div>
 
-      {/* New Color Picker */}
-      <div className="form-group mb-2">
-        <label className='pr-2'>Color</label>
-        <input
-          type="color"
-          className="border rounded px-1 py-0.5  md:w-32 h-8"
-          id="color"
-          defaultValue="#000000"
-        />
-      </div>
+      
+      
 
     </div>
 
@@ -180,4 +174,4 @@ const FilterSetup = () => {
   )
 }
 
-export default FilterSetup
+export default ClearSchedule

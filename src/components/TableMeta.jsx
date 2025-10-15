@@ -82,8 +82,27 @@ useEffect(() => {
     const item = JSON.parse(e.dataTransfer.getData("rowData"));
     const fromTable = e.dataTransfer.getData("fromTable");
 
+    // Find the <tr> element where the drop happened
+    const tr = e.target.closest("tr");
+    let insertIndex = null;
+
+    if (tr && tr.dataset && tr.dataset.rowId) {
+      const targetId = tr.dataset.rowId;
+      // find index of that row in filteredData
+      const idx = filteredData.findIndex(r => String(r.id) === String(targetId));
+      if (idx >= 0) {
+        insertIndex = idx + 1; // insert AFTER the row (as you specified)
+      }
+    }
+
+    // If drop not on a row, default to append at end
+    if (insertIndex === null) {
+      insertIndex = filteredData.length;
+    }
+
     if (fromTable !== from) {
-      onMoveRow(item, fromTable, from);
+      // pass insertIndex to parent moveRow
+      onMoveRow(item, fromTable, from, insertIndex);
     }
   };
   
@@ -245,21 +264,7 @@ useEffect(() => {
       return pages;
     };
   
-    const getSortIcon = (columnKey) => {
-      if (sortConfig.key !== columnKey) {
-        return <i className="fas fa-sort text-muted ml-1"></i>;
-      }
-      return sortConfig.direction === 'asc' 
-        ? <i className="fas fa-sort-up ml-1"></i>
-        : <i className="fas fa-sort-down ml-1"></i>;
-    };
-  
-    const renderCellContent = (item, column) => {
-      if (column.render) {
-        return column.render(item[column.key], item);
-      }
-      return item[column.key];
-    };
+    
 
 
     // ✅ Add this to your component state:
@@ -464,6 +469,7 @@ useEffect(() => {
       return (
         <tr
         key={row.id}
+        data-row-id={row.id}   
   draggable
   onDragStart={(e) => handleDragStart(e, row)}
 
@@ -471,9 +477,12 @@ useEffect(() => {
 
   onContextMenu={(e) => {
     e.preventDefault();
-    //e.stopPropagation();
-    handleRowSelect(row.id); // ✅ Right click also selects row
-
+    
+    setSelectedRows((prev) => {
+      if (prev.includes(row.id)) return prev; // keep existing selection
+      return [...prev, row.id]; // add new row to selection
+    });
+  
     setContextMenu({
       mouseX: e.clientX + 2,
       mouseY: e.clientY - 6,
