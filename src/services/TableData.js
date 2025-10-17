@@ -9,8 +9,7 @@ const tableData = [
     startTime: "",
     endDate: "",
     endTime: "",
-    duration: "00:45:00",
-    frameRate: "20",
+    duration: "00:45:00:20",
     isPaid: true,
   },
   {
@@ -23,8 +22,8 @@ const tableData = [
     startTime: "",
     endDate: "",
     endTime: "",
-    duration: "02:30:00",
-    frameRate: "6",
+    duration: "02:30:00:06",
+   
     isPaid: false,
   },
   {
@@ -37,8 +36,8 @@ const tableData = [
     startTime: "",
     endDate: "",
     endTime: "",
-    duration: "00:30:00",
-    frameRate: "15",
+    duration: "00:30:00:15",
+   
     isPaid: true,
   },
 ];

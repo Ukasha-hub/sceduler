@@ -7,7 +7,10 @@ const TableMeta = ( {data, onMoveRow, from,
   onSearch, 
   onSort, 
   onPageChange,
+  formatDateTimeWithFrame,
   onRowClick,
+  prevTimePeriod,
+  onDeleteRow,
   totalRecords = 0,
   currentPage = 1,
   pageSize = 10,
@@ -77,34 +80,47 @@ useEffect(() => {
   
   };
 
+  // Example: convert time object to string HH:MM:SS:FF
+const formatTimeWithFrame = (tp) => {
+  console.log("insidde formatTimeWithFrame", tp)
+  if (!tp) return "--:--:--:--";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(tp.hour)}:${pad(tp.minute)}:${pad(tp.second)}:${pad(tp.frame)}`;
+};
+
+
   const handleDrop = (e) => {
-    e.preventDefault();
-    const item = JSON.parse(e.dataTransfer.getData("rowData"));
-    const fromTable = e.dataTransfer.getData("fromTable");
+  e.preventDefault();
+  const item = JSON.parse(e.dataTransfer.getData("rowData"));
+  const fromTable = e.dataTransfer.getData("fromTable");
 
-    // Find the <tr> element where the drop happened
-    const tr = e.target.closest("tr");
-    let insertIndex = null;
+  // clone the row with a new unique id
+  const newRow = { ...item, id: Date.now() + Math.random() };
 
-    if (tr && tr.dataset && tr.dataset.rowId) {
-      const targetId = tr.dataset.rowId;
-      // find index of that row in filteredData
-      const idx = filteredData.findIndex(r => String(r.id) === String(targetId));
-      if (idx >= 0) {
-        insertIndex = idx + 1; // insert AFTER the row (as you specified)
-      }
-    }
+  // Find the <tr> element where the drop happened
+  const tr = e.target.closest("tr");
+  let insertIndex = null;
 
-    // If drop not on a row, default to append at end
-    if (insertIndex === null) {
-      insertIndex = filteredData.length;
-    }
+  if (tr && tr.dataset && tr.dataset.rowId) {
+    const targetId = tr.dataset.rowId;
+    const idx = filteredData.findIndex(r => String(r.id) === String(targetId));
+    if (idx >= 0) insertIndex = idx + 1;
+  }
 
-    if (fromTable !== from) {
-      // pass insertIndex to parent moveRow
-      onMoveRow(item, fromTable, from, insertIndex);
-    }
-  };
+  if (insertIndex === null) insertIndex = filteredData.length;
+
+  // Insert row in filteredData at correct index
+  setFilteredData(prev => {
+    const copy = [...prev];
+    copy.splice(insertIndex, 0, newRow);
+    return copy;
+  });
+
+  if (fromTable !== from && onMoveRow) {
+    onMoveRow(newRow, fromTable, from, insertIndex);
+  }
+};
+
   
     // Debounced search
     useEffect(() => {
@@ -267,6 +283,7 @@ useEffect(() => {
     
 
 
+
     // ✅ Add this to your component state:
 
 
@@ -300,13 +317,22 @@ const handleSelectAll = () => {
 const handleCopyRows = () => {
   const newRows = selectedRows.map(id => {
     const row = filteredData.find(r => r.id === id);
-    return { ...row, id: Date.now() + Math.random(), name: `${row.name} (Copy)` };
-  });
+    if (!row) return null;
 
-  // 1️⃣ Add to local state
+    const newId = Date.now() + Math.random();
+    return {
+      ...row,
+      id: newId,
+      name: `${row.name} (Copy)`,
+      // Clone timePeriod so we don't overwrite original
+      timePeriod: { ...row.timePeriod },
+      startTime: formatDateTimeWithFrame(new Date(), row.timePeriod),
+      endTime: row.endTime ? formatDateTimeWithFrame(new Date(row.endTime), row.timePeriod) : null,
+    };
+  }).filter(Boolean);
+
   setFilteredData(prev => [...prev, ...newRows]);
 
-  // 2️⃣ Also inform parent to update metaData
   if (onMoveRow) {
     newRows.forEach(row => onMoveRow(row, from, "metaCopy"));
   }
@@ -314,6 +340,7 @@ const handleCopyRows = () => {
   setSelectedRows([]);
   setContextMenu(null);
 };
+
 
 
 useEffect(() => {
@@ -431,97 +458,50 @@ useEffect(() => {
       </td>
     </tr>
   ) : (
-    filteredData.map((row, index) => {
-      console.log("Row data:", row);
-      // Compute Start Time
-      const startParts = row.startTime?.split(":") || ["00", "00", "00"];
-  
-  // Use previous row's total frame as start frame
-  let startFrame = "00";
-  if (index > 0) {
-    const prevRow = filteredData[index - 1];
-    const prevFrame = parseInt(prevRow.prevFrameRate || "0");
-    const currFrame = parseInt(prevRow.frameRate || "0");
-    let totalFrame = prevFrame + currFrame;
-    totalFrame = totalFrame % 25; // assuming 25 fps
-    startFrame = String(totalFrame).padStart(2, "0");
-  } else {
-    startFrame = String(parseInt(row.prevFrameRate || "0")).padStart(2, "0");
-  }
-
-  const startTimeStr = `${startParts[0].padStart(2,"0")}:${startParts[1].padStart(2,"0")}:${startParts[2].padStart(2,"0")}:${startFrame}`;
-
-      // Compute End Time
-      const durationParts = row.duration?.split(":") || ["0","0","0"];
-      const prevFrame = parseInt(row.prevFrameRate || "0");
-      const currFrame = parseInt(row.frameRate || "0");
-      let totalFrame = prevFrame + currFrame;
-      const extraSeconds = Math.floor(totalFrame / 25); // Assuming 25fps
-      totalFrame = totalFrame % 25;
-
-      const endDate = new Date(row.prevEndTime || new Date(0));
-      endDate.setHours(endDate.getHours() + parseInt(durationParts[0] || "0"));
-      endDate.setMinutes(endDate.getMinutes() + parseInt(durationParts[1] || "0"));
-      endDate.setSeconds(endDate.getSeconds() + parseInt(durationParts[2] || "0") + extraSeconds);
-
-      const endTimeStr = `${String(endDate.getHours()).padStart(2,"0")}:${String(endDate.getMinutes()).padStart(2,"0")}:${String(endDate.getSeconds()).padStart(2,"0")}:${String(totalFrame).padStart(2,"0")}`;
-
-      return (
-        <tr
+    filteredData.map((row) => (
+      <tr
         key={row.id}
-        data-row-id={row.id}   
-  draggable
-  onDragStart={(e) => handleDragStart(e, row)}
+        data-row-id={row.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, row)}
+        onClick={() => handleRowSelect(row.id)} // Left click select
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setSelectedRows((prev) => {
+            if (prev.includes(row.id)) return prev;
+            return [...prev, row.id];
+          });
+          setContextMenu({
+            mouseX: e.clientX + 2,
+            mouseY: e.clientY - 6,
+          });
+        }}
+        className={selectedRows.includes(row.id) ? "bg-gray-100 cursor-pointer" : "cursor-pointer"}
+      >
+        <td className="px-2 w-[10px]">
+          <input
+            type="checkbox"
+            checked={selectedRows.includes(row.id)}
+            onChange={() => handleRowSelect(row.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </td>
+        <td className="px-4 py-3">{row.id}</td>
 
-  onClick={() => handleRowSelect(row.id)} // Left click select
+        {/* ✅ Just display precomputed values */}
+        <td className="px-4 py-3"> {formatDateTimeWithFrame(row.startTime, row.prevTimePeriod)}</td>
+<td className="px-4 py-3">  {formatDateTimeWithFrame(row.endTime, row.timePeriod)}</td>
 
-  onContextMenu={(e) => {
-    e.preventDefault();
-    
-    setSelectedRows((prev) => {
-      if (prev.includes(row.id)) return prev; // keep existing selection
-      return [...prev, row.id]; // add new row to selection
-    });
-  
-    setContextMenu({
-      mouseX: e.clientX + 2,
-      mouseY: e.clientY - 6,
-    });
-  }}
 
-  className={selectedRows.includes(row.id) ? "bg-gray-100 cursor-pointer" : "cursor-pointer"}
-        >
-          <td className="px-2 w-[10px]">
-            <input
-              type="checkbox"
-              checked={selectedRows.includes(row.id)}
-              onChange={() => handleRowSelect(row.id)}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </td>
-          <td className="px-4 py-3">{row.id}</td>
-          <td className="px-4 py-3">{startTimeStr}</td>
-          <td className="px-4 py-3">{endTimeStr}</td>
-          <td className="px-4 py-3">{row.name}</td>
-          <td className="px-4 py-3">{row.type}</td>
-          <td className="px-4 py-3">
-  {(() => {
-    const durationParts = row.duration?.split(":") || ["0","0","0"];
-    
-    const currFrame = parseInt(row.frameRate || "0");
-   
-
-    const frameValue = String(currFrame % 25).padStart(2, "0"); // Assuming 25 FPS
-
-    return `${durationParts[0].padStart(2,"0")}:${durationParts[1].padStart(2,"0")}:${durationParts[2].padStart(2,"0")}:${frameValue}`;
-  })()}
-</td>
-          <td className="px-4 py-3">{row.isPaid ? "Yes" : "No"}</td>
-        </tr>
-      );
-    })
+        <td className="px-4 py-3">{row.name}</td>
+        <td className="px-4 py-3">{row.type}</td>
+        <td className="px-4 py-3">{row.duration || "00:00:00:00"}</td>
+        <td className="px-4 py-3">{row.isPaid ? "Yes" : "No"}</td>
+      </tr>
+    ))
   )}
 </tbody>
+
 
 
 
@@ -560,14 +540,15 @@ useEffect(() => {
 
 
  {/* Delete Button */}
- <button
+
+<button
   className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
   onClick={() => {
     if (selectedRows.length === 0) return;
 
-    // Split selected rows into parent rows vs local-only rows
-    const parentRowsToDelete = [];
+    // Split local vs parent
     const localRowsToDelete = [];
+    const parentRowsToDelete = [];
 
     selectedRows.forEach(id => {
       const parentRow = data.find(r => r.id === id);
@@ -578,22 +559,22 @@ useEffect(() => {
       }
     });
 
-    // Delete local rows
+    // Remove local rows
     setFilteredData(prev => prev.filter(r => !selectedRows.includes(r.id)));
 
-    // Delete parent rows via onMoveRow (so toast can trigger)
-    parentRowsToDelete.forEach(row => onMoveRow(row, from, null));
+    // Remove parent rows using onDeleteRow
+    parentRowsToDelete.forEach(row => {
+      if (onDeleteRow) onDeleteRow(row.id);
+    });
 
-    // For local rows, you can manually trigger the toast if needed:
-   // parentRowsToDelete.forEach(row => toast.info(`Deleted "${row.name}"`));
-
-    // Clear selection and close context menu
     setSelectedRows([]);
     setContextMenu(null);
   }}
 >
   Delete
 </button>
+
+
 </div>
 )}
 

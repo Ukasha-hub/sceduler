@@ -70,70 +70,69 @@ const Tables = () => {
     const [hours, minutes, seconds] = parts;
     return ((hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0)) * 1000;
   };
+
+  // Takes a Date object and optional frame object
+// Helper to format date + time + frame
+const formatDateTimeWithFrame = (dateStr, timePeriod, w) => {
+  if (!dateStr) return "--:--:--:--";
+  console.log("formatDateTimeWithFrame", dateStr, timePeriod, w)
+  const date = new Date(dateStr);
+
+  const pad = (n) => String(n).padStart(2, "0");
+
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+ const hours = pad(timePeriod.hour); // pad(0) = "00"
+const minutes = pad(timePeriod.minute); // pad(0) = "00"
+const seconds = pad(timePeriod.second)
+  const frame = timePeriod?.frameRate != null ? pad(timePeriod.frameRate) : "00";
+  console.log("return:", `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${frame}` )
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${frame}`;
+};
+
+
+
   // --- Move Row Logic (modified to accept insertIndex)
-  const moveRow = (item, from, to, insertIndex = null) => {
-    if (from === 'vistria' && to === 'meta') {
-      const alreadyExists = metaData.some(row => row.id === item.id);
-      if (alreadyExists) {
-        toast.info(`"${item.name}" is already in the Meta table`);
-        return;
-      }
-    
-      const idx = (typeof insertIndex === 'number') ? insertIndex : metaData.length;
-      const prevRow = idx > 0 ? metaData[idx - 1] : null;
-    
-      // Pick a safe prevEndTime (if prevRow exists use its endTime, otherwise midnight)
-      const prevEndTimeDate = prevRow 
-    ? new Date(prevRow.endTime) 
-    : new Date(); // We'll manually set HH:MM:SS to 0 for local time
-
-if (!prevRow) {
-  prevEndTimeDate.setHours(0, 0, 0, 0); // midnight local time
-}
-
-// Format as "YYYY-MM-DD HH:MM:SS" using local time
-const pad = (n) => String(n).padStart(2, "0");
-const prevEndTimeStr = `${prevEndTimeDate.getFullYear()}-${pad(prevEndTimeDate.getMonth()+1)}-${pad(prevEndTimeDate.getDate())} ${pad(prevEndTimeDate.getHours())}:${pad(prevEndTimeDate.getMinutes())}:${pad(prevEndTimeDate.getSeconds())}`;
-      console.log("prevEndTimeDate", prevEndTimeDate)
-      const tentative = {
-        ...item,
-        // store parse-safe prevEndTime as "YYYY-MM-DD HH:MM:SS"
-        prevEndTime: prevEndTimeStr,
-        
-        // prefer structured prevTimePeriod if available
-        prevTimePeriod: prevRow?.timePeriod || null,
-        // ensure for first insertion the shown timePeriod is zeros
-        timePeriod: idx === 0 ? { hour: 0, minute: 0, second: 0, frame: 0 } : (item.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 }),
-        // prevFrameRate should be the *frame component (0..24)* from previous row
-        prevFrameRate: (() => {
-          const FPS = 25;
-        
-          if (!prevRow) return 0; // first row
-        
-          // Use previous row's actual frameRate
-          const prevFrameRaw = prevRow.frameRate;
-        
-          if (typeof prevFrameRaw === "number") return prevFrameRaw % FPS;
-        
-          if (typeof prevFrameRaw === "string") {
-            const raw = prevFrameRaw.replace(/\D/g, "");
-            return Number(raw.slice(-2)) || 0;
-          }
-        
-          return 0;
-        })(),
-        __insertIndex: idx,
-        __insertAfterId: prevRow ? prevRow.id : null,
-        __insertAfterName: prevRow ? prevRow.name : null,
-        
-      };
-      console.log("tentative", tentative)
-      setPendingRow(tentative);
-      setFormInputs(prev => ({ ...prev }));
-      setShowAddDialog(true);
+ const moveRow = (item, from, to, insertIndex = null) => {
+  if ((from === 'vistria' && to === 'meta') || to === 'metaCopy') {
+    const alreadyExists = metaData.some(row => row.id === item.id);
+    if (alreadyExists) {
+      toast.info(`"${item.name}" is already in the Meta table`);
       return;
     }
-  };
+
+    const idx = (typeof insertIndex === 'number') ? insertIndex : metaData.length;
+    const prevRow = idx > 0 ? metaData[idx - 1] : null;
+
+    // Compute prevEndTimeDate safely
+    const prevEndTimeDate = prevRow 
+      ? new Date(prevRow.endTime) 
+      : new Date();
+    if (!prevRow) prevEndTimeDate.setHours(0, 0, 0, 0);
+
+    // Compute frame-aware timePeriod
+    const prevTimePeriod = prevRow?.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 };
+    const timePeriod = item.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 };
+
+    const tentative = {
+      ...item,
+      prevEndTime: formatDateTimeWithFrame(prevEndTimeDate, prevTimePeriod),
+      prevTimePeriod,
+      timePeriod,
+      prevFrameRate: prevRow?.frameRate ?? 0,
+      __insertIndex: idx,
+      __insertAfterId: prevRow ? prevRow.id : null,
+      __insertAfterName: prevRow ? prevRow.name : null,
+    };
+
+    setPendingRow(tentative);
+    setFormInputs(prev => ({ ...prev }));
+    setShowAddDialog(true);
+    return;
+  }
+};
+
 
   // --- Helpers ---
   const formatDate = date => {
@@ -142,39 +141,41 @@ const prevEndTimeStr = `${prevEndTimeDate.getFullYear()}-${pad(prevEndTimeDate.g
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
 
+  // In parent: Tables.jsx
+const handleDeleteRow = (id) => {
+  setMetaData(prev => prev.filter(row => row.id !== id));
+  toast.info(`Deleted row ${id}`)
+};
+
+
   // --- NEW: recalcSchedule to recompute start/end/timePeriod/frame rates for all rows
-  const recalcSchedule = (arr) => {
-    const updated = arr.map(r => ({ ...r })); // shallow clone
-    const midnight = new Date(new Date().setHours(0,0,0,0));
+ const recalcSchedule = (arr) => {
+  const updated = arr.map(r => ({ ...r }));
+  const midnight = new Date(new Date().setHours(0, 0, 0, 0));
 
-    for (let i = 0; i < updated.length; i++) {
-      const prev = i > 0 ? updated[i - 1] : null;
+  for (let i = 0; i < updated.length; i++) {
+    const prev = i > 0 ? updated[i - 1] : null;
 
-      const startDate = prev ? new Date(prev.endTime) : new Date(midnight);
-      // Determine duration period: prefer timePeriod if present, otherwise parse duration string (HH:MM:SS)
-      let period = null;
-      if (updated[i].timePeriod && typeof updated[i].timePeriod === 'object' && ('hour' in updated[i].timePeriod)) {
-        period = updated[i].timePeriod;
-      } else if (updated[i].duration) {
-        const parts = updated[i].duration.split(':').map(p => parseInt(p, 10) || 0);
-        period = { hour: parts[0] || 0, minute: parts[1] || 0, second: parts[2] || 0, frame: updated[i].frameRate ? (updated[i].frameRate % FPS) : 0 };
-      } else {
-        period = { hour: 0, minute: 0, second: 0, frame: 0 };
-      }
+    const startDate = prev ? new Date(prev.endTime) : new Date(midnight);
 
-      const endDate = addTimePeriod(startDate, period);
-      const tp = computeTimePeriod(startDate, endDate);
+    const durationStr = updated[i].duration || "00:00:00:00";
 
-      updated[i].startTime = formatDate(startDate);
-      updated[i].endTime = formatDate(endDate);
-      updated[i].timePeriod = { hour: tp.hour, minute: tp.minute, second: tp.second, frame: tp.frame, frameRate: tp.frameRate };
-      updated[i].frameRate = tp.frameRate; // total frames for this row
-      updated[i].prevFrameRate = prev ? prev.frameRate : 0;
-      updated[i].prevEndTime = prev ? formatDate(prev.endTime) : formatDate(midnight);
-    }
+    const durationMs = computeDuration(durationStr);
+    const endDate = new Date(startDate.getTime() + durationMs);
 
-    return updated;
-  };
+    const prevAccumTP = prev ? prev.timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
+    const tp = computeTimePeriod(prevAccumTP, durationStr);
+
+    updated[i].startTime = formatDate(startDate);
+    updated[i].endTime = formatDate(endDate);
+    updated[i].timePeriod = tp;
+    updated[i].frameRate = tp.frameRate;
+    updated[i].prevEndTime = prev ? formatDate(prev.endTime) : formatDate(midnight);
+  }
+
+  return updated;
+};
+
 
 
  
@@ -244,79 +245,73 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
   timePeriod: { hour: 0, minute: 0, second: 0, frame: 0 }, });
 
   // --- handleAddConfirm: insert pendingRow at the __insertIndex (if provided)
-  const handleAddConfirm = () => {
-    const item = pendingRow;
-    if (!item) return;
+ const handleAddConfirm = () => {
+  const item = pendingRow;
+  if (!item) return;
 
-    setMetaData(prev => {
-      const updated = [...prev];
-      const idx = (typeof item.__insertIndex === 'number') ? item.__insertIndex : updated.length;
+  setMetaData(prev => {
+    const updated = [...prev];
+    const idx = (typeof item.__insertIndex === 'number') ? item.__insertIndex : updated.length;
 
-      // Compute startTime based on previous row at idx - 1
-      const baseStart = idx > 0 ? new Date(updated[idx - 1].endTime) : new Date(new Date().setHours(0, 0, 0, 0));
-      const durationMs = computeDuration(item.duration);
-      const newEnd = new Date(baseStart.getTime() + durationMs);
-      const currFrameRate= Number(item.frameRate)
-      console.log("currFrameRate", currFrameRate)
-      const prevFrameRate= idx > 0 ? Number(updated[idx - 1].frameRate) : 0;
-      console.log("currFrameRate, prevFrameRate", currFrameRate, prevFrameRate)
-      const timePeriod = computeTimePeriod(baseStart, newEnd, currFrameRate, prevFrameRate);
-     console.log("timePeriod", timePeriod)
-      const rowToInsert = {
-        ...item,
-        startTime: formatDate(baseStart),
-        endTime: formatDate(newEnd),
-        duration: item.duration,
-        timePeriod,
-        frameRate: timePeriod.frameRate,
-        category: formInputs.category,
-        type: item.type,
-        repeat: formInputs.repeat,
-        isCommercial: formInputs.isCommercial,
-        bonus: formInputs.bonus,
-        prevFrameRate: idx > 0 ? updated[idx - 1].frameRate : 0,
-        prevEndTime: idx > 0 ? formatDate(updated[idx - 1].endTime) : formatDate(new Date(new Date().setHours(0, 0, 0, 0)))
-      };
+    // Start time = end time of previous row OR midnight
+    const baseStart = idx > 0 ? new Date(updated[idx - 1].endTime) : new Date(new Date().setHours(0, 0, 0, 0));
+    console.log("baseStart",baseStart)
 
-      updated.splice(idx, 0, rowToInsert);
+    // Duration to endTime
+    const durationMs = computeDuration(item.duration);
+    const newEnd = new Date(baseStart.getTime() + durationMs); // <-- End time as Date
 
-      // Recalculate everything after insertion
-      return recalcSchedule(updated);
-    });
+    // Previous accumulated timePeriod or zero
+    const prevAccumTP = idx > 0 ? updated[idx - 1].timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
 
-    setShowAddDialog(false);
-    setPendingRow(null);
-    setFormInputs(prev => ({ ...prev, category: "", type: "", repeat: false, isCommercial: false, bonus: false }));
-  };
+    // Compute new accumulated timePeriod (STOPWATCH MODE)
+    const timePeriod = computeTimePeriod(prevAccumTP, item.duration);
+     console.log("item startDate",item.startTime)
+     let w=""
+    const rowToInsert = {
+      ...item,
+      
+      duration: item.duration,
+      timePeriod,
+      frameRate: timePeriod.frameRate,
+      category: formInputs.category,
+      type: item.type,
+      repeat: formInputs.repeat,
+      isCommercial: formInputs.isCommercial,
+      bonus: formInputs.bonus,
+      prevEndTime: idx > 0 ? formatDate(updated[idx - 1].endTime) : formatDate(new Date(new Date().setHours(0, 0, 0, 0)))
+    };
+
+    updated.splice(idx, 0, rowToInsert);
+
+    return recalcSchedule(updated);
+  });
+
+  setShowAddDialog(false);
+  setPendingRow(null);
+  setFormInputs(prev => ({ ...prev, category: "", type: "", repeat: false, isCommercial: false, bonus: false }));
+};
+
   
   const FPS = 25; // frames per second
 
 // --- Compute timePeriod from start and end dates
-function computeTimePeriod(start, end, currFrameRate , prevFrameRate ) {
+function computeTimePeriod(prevTimePeriod, durationStr) {
   const FPS = 25;
 
-  // Ensure Date format
-  const s = (start instanceof Date) ? start : new Date(start);
-  const e = (end instanceof Date) ? end : new Date(end);
+  // Decompose previous accumulated time
+  let totalFrames =
+    (prevTimePeriod.hour * 3600 + prevTimePeriod.minute * 60 + prevTimePeriod.second) * FPS +
+    (prevTimePeriod.frameRate || 0);
 
-  //console.log("s,e", s.getTime(),e.getMinutes())
+  // Decompose duration "HH:MM:SS:FF"
+  const [h, m, s, f] = durationStr.split(':').map(n => parseInt(n, 10) || 0);
+  const durationFrames = (h * 3600 + m * 60 + s) * FPS + f;
 
-  // ✅ Convert start time → totalSeconds
-  const startTotalSeconds = s.getHours() * 3600 + s.getMinutes() * 60 + s.getSeconds();
- 
-  // ✅ Convert end time → totalSeconds
-  const endTotalSeconds = e.getHours() * 3600 + e.getMinutes() * 60 + e.getSeconds();
-   // console.log("endTotalSeconds", endTotalSeconds )
-  // ✅ Convert to frames (seconds × FPS)
-  const startFrames = startTotalSeconds * FPS + (prevFrameRate );
-  const endFrames   = endTotalSeconds   * FPS + (currFrameRate );
-  console.log("prevFrameRate ", prevFrameRate )
-  console.log("currFrameRate ", currFrameRate )
-  // ✅ Compute elapsed frames
-  let totalFrames = endFrames - startFrames;
-  if (totalFrames < 0) totalFrames = 0;
+  // Add to accumulated time
+  totalFrames += durationFrames;
 
-  // ✅ Convert back to HH:MM:SS:FF
+  // Convert back to HH:MM:SS:FF
   const hour = Math.floor(totalFrames / (FPS * 3600));
   totalFrames -= hour * FPS * 3600;
 
@@ -326,10 +321,9 @@ function computeTimePeriod(start, end, currFrameRate , prevFrameRate ) {
   const second = Math.floor(totalFrames / FPS);
   const frameRate = totalFrames % FPS;
 
-  console.log("Time:",hour, minute, second,  frameRate )
-
-  return { hour, minute, second,  frameRate };
+  return { hour, minute, second, frameRate };
 }
+
 // --- Add a period to a date
 function addTimePeriod(date, period = { hour: 0, minute: 0, second: 0, frame: 0 }) {
   const totalMs =
@@ -418,7 +412,7 @@ const getToday = () => {
   return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
 };
 
-
+console.log("metadata:",metaData)
   return (
     <div>
       <section className="content" style={{ fontSize: '12px', fontWeight: 400 }}>
@@ -529,9 +523,12 @@ const getToday = () => {
                     onMoveRow={moveRow}
                     from="meta"
                     onSearch={handleSearch}
+                    formatDateTimeWithFrame={formatDateTimeWithFrame}
                     onSort={handleSort}
+                 
                     onPageChange={handlePageChange}
                     onRowClick={handleRowClick}
+                     onDeleteRow={handleDeleteRow}
                     totalRecords={pagination.totalRecords}
                     currentPage={pagination.currentPage}
                     pageSize={pagination.pageSize}
