@@ -110,11 +110,7 @@ const formatTimeWithFrame = (tp) => {
   if (insertIndex === null) insertIndex = filteredData.length;
 
   // Insert row in filteredData at correct index
-  setFilteredData(prev => {
-    const copy = [...prev];
-    copy.splice(insertIndex, 0, newRow);
-    return copy;
-  });
+ 
 
   if (fromTable !== from && onMoveRow) {
     onMoveRow(newRow, fromTable, from, insertIndex);
