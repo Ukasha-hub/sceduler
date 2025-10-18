@@ -152,6 +152,7 @@ const handleDeleteRow = (id) => {
  const recalcSchedule = (arr) => {
   const updated = arr.map(r => ({ ...r }));
   const midnight = new Date(new Date().setHours(0, 0, 0, 0));
+  console.log("updated",updated)
 
   for (let i = 0; i < updated.length; i++) {
     const prev = i > 0 ? updated[i - 1] : null;
@@ -165,12 +166,17 @@ const handleDeleteRow = (id) => {
 
     const prevAccumTP = prev ? prev.timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
     const tp = computeTimePeriod(prevAccumTP, durationStr);
-
-    updated[i].startTime = formatDate(startDate);
-    updated[i].endTime = formatDate(endDate);
+    console.log("testing:", formatDate(startDate), formatDate(endDate), updated[i].timePeriod, updated[i].prevTimePeriod)
+    updated[i].startTime = formatDate(startDate)
+    updated[i].endTime = formatDate(endDate)
     updated[i].timePeriod = tp;
     updated[i].frameRate = tp.frameRate;
     updated[i].prevEndTime = prev ? formatDate(prev.endTime) : formatDate(midnight);
+
+     // ✅ Update PREVIOUS references
+     updated[i].prevEndTime = prev ? formatDate(prev.endTime) : formatDate(midnight);
+     updated[i].prevTimePeriod = prev ? { ...prev.timePeriod } : { hour: 0, minute: 0, second: 0, frameRate: 0 };
+     updated[i].prevFrameRate = updated[i].prevTimePeriod.frameRate;
   }
 
   return updated;

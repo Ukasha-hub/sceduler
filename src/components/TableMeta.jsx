@@ -483,7 +483,7 @@ useEffect(() => {
           />
         </td>
         <td className="px-4 py-3">{row.id}</td>
-
+        {console.log("test in metadata, ",row.name, row.startTime, row.prevTimePeriod)}
         {/* ✅ Just display precomputed values */}
         <td className="px-4 py-3"> {formatDateTimeWithFrame(row.startTime, row.prevTimePeriod)}</td>
 <td className="px-4 py-3">  {formatDateTimeWithFrame(row.endTime, row.timePeriod)}</td>
