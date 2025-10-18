@@ -26,7 +26,7 @@ const TableMeta = ( {data, onMoveRow, from,
     const containerRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredData, setFilteredData] = useState(data);
-
+console.log("filteredData", filteredData)
 const [contextMenu, setContextMenu] = useState(null);
 const [selectedRow, setSelectedRow] = useState(null);
 
@@ -39,7 +39,25 @@ const [clipboard, setClipboard] = useState(null);
 const [blankContextMenu, setBlankContextMenu] = useState(null);
 
 const handleUpdateClick = (row) => {
+  console.log("Selected row:", row);
   setSelectedRow(row);
+  setFormInputs({
+    date: row.startDate || row.startTime.split(' ')[0],
+    endDate: row.endDate || "",
+    category: row.category || "",
+    type: row.type || "",
+    isCommercial: row.isCommercial || false,
+    bonus: row.bonus || false,
+    rateAgreementNo: row.rateAgreementNo || "",
+    agency: row.agency || "",
+    slug: row.slug || "",
+    spotType: row.spotType || "",
+    check: row.repeat || false,
+    projectName: row.name || "",
+    assetId: row.id || "",
+    timePeriod: row.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 },
+    duration: row.duration || "00:00:00:00",
+  });
   setShowUpdate(true);
 };
 
@@ -86,6 +104,13 @@ const formatTimeWithFrame = (tp) => {
   if (!tp) return "--:--:--:--";
   const pad = (n) => String(n).padStart(2, "0");
   return `${pad(tp.hour)}:${pad(tp.minute)}:${pad(tp.second)}:${pad(tp.frame)}`;
+};
+
+const typeColors = {
+  PGM: "#E3F2FD",   // light blue
+  COM: "#FFEBEE",   // light red
+  PROMO: "#E8F5E9", // light green
+  // add more types here
 };
 
 
@@ -363,6 +388,8 @@ useEffect(() => {
       setContextMenu(null);
     }
   }
+
+  
   
 
   document.addEventListener("contextmenu", handleOutsideRightClick);
@@ -433,6 +460,7 @@ useEffect(() => {
       checked={selectedRows.length === filteredData.length && filteredData.length > 0}
       onChange={handleSelectAll}
       className="cursor-pointer"
+      
     />
     All
   </label>
@@ -455,6 +483,7 @@ useEffect(() => {
     </tr>
   ) : (
     filteredData.map((row) => (
+     
       <tr
         key={row.id}
         data-row-id={row.id}
@@ -462,15 +491,22 @@ useEffect(() => {
         onDragStart={(e) => handleDragStart(e, row)}
         onClick={() => handleRowSelect(row.id)} // Left click select
         onContextMenu={(e) => {
+          console.log("row", row)
           e.preventDefault();
           setSelectedRows((prev) => {
             if (prev.includes(row.id)) return prev;
             return [...prev, row.id];
           });
+          setSelectedRow(row);
           setContextMenu({
             mouseX: e.clientX + 2,
             mouseY: e.clientY - 6,
           });
+        }}
+        style={{
+          backgroundColor: selectedRows.includes(row.id)
+            ? "#D3D3D3" // selection gray
+            : typeColors[row.type] || "white", // fallback to white
         }}
         className={selectedRows.includes(row.id) ? "bg-gray-100 cursor-pointer" : "cursor-pointer"}
       >
@@ -479,7 +515,7 @@ useEffect(() => {
             type="checkbox"
             checked={selectedRows.includes(row.id)}
             onChange={() => handleRowSelect(row.id)}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {e.stopPropagation();    }}
           />
         </td>
         <td className="px-4 py-3">{row.id}</td>
@@ -516,8 +552,45 @@ useEffect(() => {
   <button
     className="block w-full text-left px-4 py-2 hover:bg-gray-100"
     onClick={() => {
-      setShowUpdate(true);
-      setContextMenu(null);
+      // ✅ Set form values from selectedRow before opening modal
+     const row = selectedRow;
+     if (row) {
+      setFormInputs({
+        date: row.startDate || row.startTime?.split(" ")[0] || "",
+    
+        endDate: row.endDate || row.endTime?.split(" ")[0] || "",
+    
+        category: row.category || "",
+    
+        type: row.type || "",
+    
+        isCommercial: row.isCommercial || false,
+    
+        bonus: row.bonus || false,
+    
+        rateAgreementNo: row.rateAgreementNo || "",
+    
+        agency: row.agency || "",
+    
+        slug: row.slug || "",
+    
+        spotType: row.spotType || "",
+    
+        check: row.repeat || false,
+    
+        projectName: row.name || "",
+    
+        assetId: row.id || "",
+    
+        timePeriod: row.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 },
+    
+        duration: row.duration || "00:00:00:00",
+      });
+    }
+
+    setContextMenu(null);
+    setShowUpdate(true);
+   
     }}
   >
     Update
