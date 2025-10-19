@@ -8,8 +8,15 @@ const TableMeta = ( {data, onMoveRow, from,
   onSort, 
   onPageChange,
   formatDateTimeWithFrame,
+  recalcSchedule,
   onRowClick,
   prevTimePeriod,
+  setPendingRow,
+  setMetaData,
+  handleAddConfirm ,
+  computeTimePeriod,
+  computeDuration,
+  formatDate,
   onDeleteRow,
   totalRecords = 0,
   currentPage = 1,
@@ -36,30 +43,9 @@ const [showUpdate, setShowUpdate] = useState(false);
 const [selectedRows, setSelectedRows] = useState([]);
 const [clipboard, setClipboard] = useState(null);
 
-const [blankContextMenu, setBlankContextMenu] = useState(null);
+console.log("dataDATA",data)
 
-const handleUpdateClick = (row) => {
-  console.log("Selected row:", row);
-  setSelectedRow(row);
-  setFormInputs({
-    date: row.startDate || row.startTime.split(' ')[0],
-    endDate: row.endDate || "",
-    category: row.category || "",
-    type: row.type || "",
-    isCommercial: row.isCommercial || false,
-    bonus: row.bonus || false,
-    rateAgreementNo: row.rateAgreementNo || "",
-    agency: row.agency || "",
-    slug: row.slug || "",
-    spotType: row.spotType || "",
-    check: row.repeat || false,
-    projectName: row.name || "",
-    assetId: row.id || "",
-    timePeriod: row.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 },
-    duration: row.duration || "00:00:00:00",
-  });
-  setShowUpdate(true);
-};
+
 
 const [formInputs, setFormInputs] = useState({
   date: "",
@@ -335,32 +321,71 @@ const handleSelectAll = () => {
 }
 
 // Inside TableMeta
+// ✅ COPY → Only store in clipboard
 const handleCopyRows = () => {
-  const newRows = selectedRows.map(id => {
+  const rowsToCopy = selectedRows.map(id => {
     const row = filteredData.find(r => r.id === id);
     if (!row) return null;
 
-    const newId = Date.now() + Math.random();
+    const lastIndex = data.findIndex(r => r.id === row.id);
+    const prevRow = lastIndex >= 0 ? data[lastIndex] : null;
+
+    const prevTP = prevRow ? prevRow.timePeriod : { hour:0, minute:0, second:0, frameRate:0 };
+    const prevEnd = prevRow ? prevRow.endTime : formatDate(new Date(new Date().setHours(0,0,0,0)));
+
+    const newTP = computeTimePeriod(prevTP, row.duration);
+    const baseStart = prevRow ? new Date(prevRow.endTime) : new Date(new Date().setHours(0,0,0,0));
+    const durationMs = computeDuration(row.duration);
+
     return {
       ...row,
-      id: newId,
+      id: Date.now() + Math.random(),
       name: `${row.name} (Copy)`,
-      // Clone timePeriod so we don't overwrite original
-      timePeriod: { ...row.timePeriod },
-      startTime: formatDateTimeWithFrame(new Date(), row.timePeriod),
-      endTime: row.endTime ? formatDateTimeWithFrame(new Date(row.endTime), row.timePeriod) : null,
+      prevTimePeriod: prevTP,
+      prevEndTime: prevEnd,
+      timePeriod: newTP,
+      frameRate: newTP.frameRate,
+      startTime: formatDate(baseStart),
+      endTime: formatDate(new Date(baseStart.getTime() + durationMs)),
+      __insertIndex: lastIndex + 1
     };
   }).filter(Boolean);
 
-  setFilteredData(prev => [...prev, ...newRows]);
-
-  if (onMoveRow) {
-    newRows.forEach(row => onMoveRow(row, from, "metaCopy"));
-  }
-
+  setClipboard(rowsToCopy); // ✅ Only save rowsToCopy here
   setSelectedRows([]);
   setContextMenu(null);
+  console.log("Copied to clipboard:", rowsToCopy);
 };
+
+
+
+const handlePaste = (insertAfterId = null, newDate = null) => {
+  if (!clipboard || clipboard.length === 0) return;
+
+  const newRows = clipboard.map(row => ({
+    ...row,
+    id: Date.now() + Math.random(), // ensure unique id
+    startTime: newDate ? `${newDate} ${row.startTime.split(" ")[1]}` : row.startTime,
+    endTime: newDate ? `${newDate} ${row.endTime?.split(" ")[1] || ""}` : row.endTime,
+  }));
+
+  setMetaData(prev => {
+    const updated = [...prev];
+    let insertIndex = updated.length;
+
+    if (insertAfterId !== null) {
+      const idx = updated.findIndex(r => r.id === insertAfterId);
+      if (idx >= 0) insertIndex = idx + 1;
+    }
+
+    updated.splice(insertIndex, 0, ...newRows); // ✅ Insert here
+    return recalcSchedule(updated);
+  });
+
+  setClipboard(null); // Clear clipboard
+  console.log("Pasted rows:", newRows);
+};
+
 
 
 
@@ -442,12 +467,13 @@ useEffect(() => {
   className="datatable-table table table-hover w-full min-w-max"
   onContextMenu={(e) => {
     e.preventDefault();
-
-    // If clicked on any row or cell → do nothing
+    // Only trigger if clicking on blank space
     if (e.target.closest("tr") || e.target.closest("td")) return;
+    if (!clipboard) return;
 
-    setContextMenu(null);
-  
+    // Optional: prompt for new date
+    const newDate = prompt("Enter new date (YYYY-MM-DD) or leave blank to keep original:");
+    handlePaste(null, newDate || null); // null = append at end
   }}>
 
 <thead className="bg-gray-100">
@@ -605,6 +631,19 @@ useEffect(() => {
 >
   Copy
 </button>
+
+{contextMenu && clipboard && (
+  <button
+    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+    onClick={() => {
+      handlePaste(selectedRow?.id || null); // paste after selected row
+      setContextMenu(null);
+    }}
+  >
+    Paste
+  </button>
+)}
+
 
 
 

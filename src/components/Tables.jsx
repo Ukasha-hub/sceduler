@@ -94,13 +94,11 @@ const seconds = pad(timePeriod.second)
 
 
   // --- Move Row Logic (modified to accept insertIndex)
- const moveRow = (item, from, to, insertIndex = null) => {
+ const moveRow = (item, from, to, insertIndex = null, options = {}) => {
   if ((from === 'vistria' && to === 'meta') || to === 'metaCopy') {
-    const alreadyExists = metaData.some(row => row.id === item.id);
-    if (alreadyExists) {
-      toast.info(`"${item.name}" is already in the Meta table`);
-      return;
-    }
+
+   
+    
 
     const idx = (typeof insertIndex === 'number') ? insertIndex : metaData.length;
     const prevRow = idx > 0 ? metaData[idx - 1] : null;
@@ -125,6 +123,9 @@ const seconds = pad(timePeriod.second)
       __insertAfterId: prevRow ? prevRow.id : null,
       __insertAfterName: prevRow ? prevRow.name : null,
     };
+    
+    
+    
 
     setPendingRow(tentative);
     setFormInputs(prev => ({ ...prev }));
@@ -259,24 +260,30 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
     const updated = [...prev];
     const idx = (typeof item.__insertIndex === 'number') ? item.__insertIndex : updated.length;
 
+    
+     // Safely get previous row
+     const prevRow = idx > 0 ? updated[idx - 1] : null;
+
     // Start time = end time of previous row OR midnight
-    const baseStart = idx > 0 ? new Date(updated[idx - 1].endTime) : new Date(new Date().setHours(0, 0, 0, 0));
+    const baseStart = prevRow ? new Date(prevRow.endTime) : new Date(new Date().setHours(0, 0, 0, 0));
     console.log("baseStart",baseStart)
 
     // Duration to endTime
-    const durationMs = computeDuration(item.duration);
+    const durationMs = computeDuration(item.duration || "00:00:00:00");
     const newEnd = new Date(baseStart.getTime() + durationMs); // <-- End time as Date
 
     // Previous accumulated timePeriod or zero
-    const prevAccumTP = idx > 0 ? updated[idx - 1].timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
+    const prevAccumTP = prevRow ? prevRow.timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
 
     // Compute new accumulated timePeriod (STOPWATCH MODE)
-    const timePeriod = computeTimePeriod(prevAccumTP, item.duration);
+    const timePeriod = computeTimePeriod(prevAccumTP, item.duration || "00:00:00:00");
      console.log("item startDate",item.startTime)
-     let w=""
+    
     const rowToInsert = {
       ...item,
-      
+      id: Date.now(),
+      startTime: formatDate(baseStart),
+      endTime: formatDate(newEnd),
       duration: item.duration,
       timePeriod,
       frameRate: timePeriod.frameRate,
@@ -285,8 +292,12 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
       repeat: formInputs.repeat,
       isCommercial: formInputs.isCommercial,
       bonus: formInputs.bonus,
-      prevEndTime: idx > 0 ? formatDate(updated[idx - 1].endTime) : formatDate(new Date(new Date().setHours(0, 0, 0, 0)))
+      prevEndTime: prevRow ? formatDate(prevRow.endTime) : formatDate(new Date(new Date().setHours(0, 0, 0, 0))),
+      prevTimePeriod: prevRow ? { ...prevRow.timePeriod } : { hour: 0, minute: 0, second: 0, frameRate: 0 },
+      prevFrameRate: prevRow ? prevRow.timePeriod.frameRate : 0
     };
+
+    console.log("Inserting row", rowToInsert);
 
     updated.splice(idx, 0, rowToInsert);
 
@@ -531,7 +542,13 @@ console.log("metadata:",metaData)
                     onSearch={handleSearch}
                     formatDateTimeWithFrame={formatDateTimeWithFrame}
                     onSort={handleSort}
-                 
+                    setPendingRow={     setPendingRow}
+                    recalcSchedule={recalcSchedule}
+                    setMetaData={ setMetaData}
+                    computeTimePeriod={computeTimePeriod}
+                    formatDate={formatDate}
+                    computeDuration={computeDuration}
+                    handleAddConfirm ={handleAddConfirm }
                     onPageChange={handlePageChange}
                     onRowClick={handleRowClick}
                      onDeleteRow={handleDeleteRow}
