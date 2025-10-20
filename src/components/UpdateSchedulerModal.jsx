@@ -44,7 +44,7 @@ const UpdateSchedulerModal = ({
                 <input
                   type="text"
                   className="form-control form-control-sm text-xs"
-                  value={formInputs.category || ""}
+                  value={formInputs.slug || ""}
                 
                 />
               </div>

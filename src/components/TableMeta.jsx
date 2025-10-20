@@ -33,7 +33,7 @@ const TableMeta = ( {data, onMoveRow, from,
     const containerRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredData, setFilteredData] = useState(data);
-console.log("filteredData", filteredData)
+//console.log("filteredData", filteredData)
 const [contextMenu, setContextMenu] = useState(null);
 const [selectedRow, setSelectedRow] = useState(null);
 
@@ -43,7 +43,7 @@ const [showUpdate, setShowUpdate] = useState(false);
 const [selectedRows, setSelectedRows] = useState([]);
 const [clipboard, setClipboard] = useState(null);
 
-console.log("dataDATA",data)
+//console.log("dataDATA",data)
 
 
 
@@ -86,7 +86,7 @@ useEffect(() => {
 
   // Example: convert time object to string HH:MM:SS:FF
 const formatTimeWithFrame = (tp) => {
-  console.log("insidde formatTimeWithFrame", tp)
+ // console.log("insidde formatTimeWithFrame", tp)
   if (!tp) return "--:--:--:--";
   const pad = (n) => String(n).padStart(2, "0");
   return `${pad(tp.hour)}:${pad(tp.minute)}:${pad(tp.second)}:${pad(tp.frame)}`;
@@ -354,7 +354,7 @@ const handleCopyRows = () => {
   setClipboard(rowsToCopy); // ✅ Only save rowsToCopy here
   setSelectedRows([]);
   setContextMenu(null);
-  console.log("Copied to clipboard:", rowsToCopy);
+ // console.log("Copied to clipboard:", rowsToCopy);
 };
 
 
@@ -383,7 +383,7 @@ const handlePaste = (insertAfterId = null, newDate = null) => {
   });
 
   setClipboard(null); // Clear clipboard
-  console.log("Pasted rows:", newRows);
+ // console.log("Pasted rows:", newRows);
 };
 
 
@@ -426,9 +426,10 @@ useEffect(() => {
     return (
       <div 
         ref={containerRef}
-        className="datatable-container w-full h-full flex flex-col" 
+        className="datatable-container w-full h-full flex flex-col " 
         style={{
-          height: fillHeight ? containerHeight : 'auto'
+          height: fillHeight ? containerHeight : 'auto',
+          
         }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
@@ -461,10 +462,10 @@ useEffect(() => {
         </div>
   
         {/* Table Body with Fixed Height and Scroll */}
-        <div className="datatable-body overflow-x-auto">
+        <div className="datatable-body overflow-x-auto ">
 
         <table
-  className="datatable-table table table-hover w-full min-w-max"
+  className="datatable-table table table-hover min-w-[300px]"
   onContextMenu={(e) => {
     e.preventDefault();
     // Only trigger if clicking on blank space
@@ -517,7 +518,7 @@ useEffect(() => {
         onDragStart={(e) => handleDragStart(e, row)}
         onClick={() => handleRowSelect(row.id)} // Left click select
         onContextMenu={(e) => {
-          console.log("row", row)
+         // console.log("row", row)
           e.preventDefault();
           setSelectedRows((prev) => {
             if (prev.includes(row.id)) return prev;
@@ -545,7 +546,7 @@ useEffect(() => {
           />
         </td>
         <td className="px-4 py-3">{row.id}</td>
-        {console.log("test in metadata, ",row.name, row.startTime, row.prevTimePeriod)}
+        
         {/* ✅ Just display precomputed values */}
         <td className="px-4 py-3"> {formatDateTimeWithFrame(row.startTime, row.prevTimePeriod)}</td>
 <td className="px-4 py-3">  {formatDateTimeWithFrame(row.endTime, row.timePeriod)}</td>
@@ -694,7 +695,7 @@ useEffect(() => {
     setFormInputs={setFormInputs}
     onClose={() => setShowUpdate(false)}
     onConfirm={(updatedData) => {
-      console.log("Updated data:", updatedData);
+      //console.log("Updated data:", updatedData);
       setShowUpdate(false);
     }}
   />

@@ -24,7 +24,8 @@ const AddDataModal = ({
   })();
 
   const frame = pendingRow?.timePeriod?.frame ?? 0;
-
+  console.log("formInputs",formInputs)
+  console.log("pending row", pendingRow)
   // ---- Compute Final End Time + Correct Date ----
 let finalEndTime = "00:00:00:00";
 let finalEndDate = pendingRow?.prevEndTime?.split(" ")[0] || ""; // e.g. "2025-10-17"
@@ -113,11 +114,11 @@ if (pendingRow) {
                 <input
                   type="text"
                   className="form-control form-control-sm text-xs"
-                  value={formInputs.category}
+                  value={formInputs.slug}
                   onChange={(e) =>
                     setFormInputs({
                       ...formInputs,
-                      category: e.target.value,
+                      slug: e.target.value,
                     })
                   }
                 />
@@ -179,10 +180,20 @@ if (pendingRow) {
             <div className="flex flex-row flex-wrap gap-2 mt-1">
               <div className="form-group" style={{ flex: "0 0 30%" }}>
                 <label className="text-xs">Select</label>
-                <select className="form-control form-control-sm text-xs">
-                  <option>a</option>
-                  <option>b</option>
-                </select>
+                <select
+                    className="form-control form-control-sm text-xs"
+                    value={formInputs.selectOption || ""}    // store into formInputs.selectOption
+                    onChange={(e) =>
+                      setFormInputs({
+                        ...formInputs,
+                        selectOption: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">--Select--</option>
+                    <option value="a">a</option>
+                    <option value="b">b</option>
+                  </select>
               </div>
               <div className="form-group" style={{ flex: "0 0 25%" }}>
                 <label className="text-xs">Rate Agreement No.</label>
@@ -334,9 +345,19 @@ if (pendingRow) {
               </div>
               <div className="form-group" style={{ flex: "0 0 25%" }}>
                 <label className="text-xs">Select Spot</label>
-                <select className="form-control form-control-sm text-xs">
-                  <option>Just Before</option>
-                  <option>Super</option>
+                <select
+                  className="form-control form-control-sm text-xs"
+                  value={formInputs.selectSpot || ""}   // controlled
+                  onChange={(e) =>
+                    setFormInputs({
+                      ...formInputs,
+                      selectSpot: e.target.value,       // saved into formInputs
+                    })
+                  }
+                >
+                  <option value="">--Select--</option>
+                  <option value="Just Before">Just Before</option>
+                  <option value="Super">Super</option>
                 </select>
               </div>
             </div>

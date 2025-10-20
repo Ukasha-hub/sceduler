@@ -75,7 +75,7 @@ const Tables = () => {
 // Helper to format date + time + frame
 const formatDateTimeWithFrame = (dateStr, timePeriod, w) => {
   if (!dateStr) return "--:--:--:--";
-  console.log("formatDateTimeWithFrame", dateStr, timePeriod, w)
+  //console.log("formatDateTimeWithFrame", dateStr, timePeriod, w)
   const date = new Date(dateStr);
 
   const pad = (n) => String(n).padStart(2, "0");
@@ -87,7 +87,7 @@ const formatDateTimeWithFrame = (dateStr, timePeriod, w) => {
 const minutes = pad(timePeriod.minute); // pad(0) = "00"
 const seconds = pad(timePeriod.second)
   const frame = timePeriod?.frameRate != null ? pad(timePeriod.frameRate) : "00";
-  console.log("return:", `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${frame}` )
+  //console.log("return:", `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${frame}` )
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${frame}`;
 };
 
@@ -153,7 +153,7 @@ const handleDeleteRow = (id) => {
  const recalcSchedule = (arr) => {
   const updated = arr.map(r => ({ ...r }));
   const midnight = new Date(new Date().setHours(0, 0, 0, 0));
-  console.log("updated",updated)
+  //console.log("updated",updated)
 
   for (let i = 0; i < updated.length; i++) {
     const prev = i > 0 ? updated[i - 1] : null;
@@ -167,7 +167,7 @@ const handleDeleteRow = (id) => {
 
     const prevAccumTP = prev ? prev.timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
     const tp = computeTimePeriod(prevAccumTP, durationStr);
-    console.log("testing:", formatDate(startDate), formatDate(endDate), updated[i].timePeriod, updated[i].prevTimePeriod)
+   // console.log("testing:", formatDate(startDate), formatDate(endDate), updated[i].timePeriod, updated[i].prevTimePeriod)
     updated[i].startTime = formatDate(startDate)
     updated[i].endTime = formatDate(endDate)
     updated[i].timePeriod = tp;
@@ -244,11 +244,13 @@ const handleDeleteRow = (id) => {
 const [pendingRow, setPendingRow] = useState(null);
 const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().split("T")[0],
   note: "",
-  category: "",
+  slug: "",
   type: "",
   repeat: false,
   isCommercial: false,
   bonus: false,
+  rateAgreementNo: "" ,
+  agency: "",
   timePeriod: { hour: 0, minute: 0, second: 0, frame: 0 }, });
 
   // --- handleAddConfirm: insert pendingRow at the __insertIndex (if provided)
@@ -266,7 +268,7 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
 
     // Start time = end time of previous row OR midnight
     const baseStart = prevRow ? new Date(prevRow.endTime) : new Date(new Date().setHours(0, 0, 0, 0));
-    console.log("baseStart",baseStart)
+   // console.log("baseStart",baseStart)
 
     // Duration to endTime
     const durationMs = computeDuration(item.duration || "00:00:00:00");
@@ -277,7 +279,7 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
 
     // Compute new accumulated timePeriod (STOPWATCH MODE)
     const timePeriod = computeTimePeriod(prevAccumTP, item.duration || "00:00:00:00");
-     console.log("item startDate",item.startTime)
+    // console.log("item startDate",item.startTime)
     
     const rowToInsert = {
       ...item,
@@ -287,9 +289,11 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
       duration: item.duration,
       timePeriod,
       frameRate: timePeriod.frameRate,
-      category: formInputs.category,
+      slug: formInputs.slug,
+      rateAgreementNo: formInputs.rateAgreementNo,
       type: item.type,
       repeat: formInputs.repeat,
+      agency: formInputs.agency,
       isCommercial: formInputs.isCommercial,
       bonus: formInputs.bonus,
       prevEndTime: prevRow ? formatDate(prevRow.endTime) : formatDate(new Date(new Date().setHours(0, 0, 0, 0))),
@@ -367,7 +371,7 @@ const handleAddClick = (item) => {
 
 // --- Helper to download CSV ---
 const downloadCSV = (data = metaData) => {
-   console.log("MetaData inside CSV:", metaData);
+   //console.log("MetaData inside CSV:", metaData);
   if (!data || !Array.isArray(data) || data.length === 0) {
     toast.info("No data available to download.");
     return;
@@ -429,7 +433,7 @@ const getToday = () => {
   return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
 };
 
-console.log("metadata:",metaData)
+//console.log("metadata:",metaData)
   return (
     <div>
       <section className="content" style={{ fontSize: '12px', fontWeight: 400 }}>
@@ -510,7 +514,7 @@ console.log("metadata:",metaData)
               )}
               <div className="card rundown-table-card justify-center">
                 <div className="flex justify-between items-center bg-gray-100 border-b px-3 py-1">
-                  <div className='flex flex-row justify-start h-10 gap-3'>
+                  <div className='flex flex-row justify-start h-10 gap-3  lg:gap-7'>
                     <div className="form-group flex gap-2">
                       <label className='mt-2'>Date:</label>
                       <input
@@ -520,13 +524,16 @@ console.log("metadata:",metaData)
                         defaultValue={getToday()}
                       />
                     </div>
-                   <button className="btn btn-xs text-xs text-black bg-green-300 lw-15 h-9 p-1" onClick={() => downloadCSV(metaData)}>
-   <span className='flex flex-col lg:flex-row gap-2'> <FaFileCsv className='h-4'/> CSV</span>
+                    <div className='flex flex-row gap-2'>
+                    <button className="btn btn-xs text-xs text-black bg-green-300 lw-15 h-9 p-1" onClick={() => downloadCSV(metaData)}>
+   <span className='flex flex-col lg:flex-row lg:gap-1'> <FaFileCsv className='h-4'/> CSV</span>
 </button>
                   
                      <button className="btn btn-xs text-xs text-black bg-red-300 w-15  h-9 p-1" onClick={() => downloadPDF()}>
-                     <span className='flex flex-col lg:flex-row gap-2'> <FaFilePdf className='h-4'/> PDF</span>
+                     <span className='flex flex-col lg:flex-row lg:gap-1'> <FaFilePdf className='h-4'/> PDF</span>
 </button>
+                    </div>
+                 
                   </div>
                    
                   <div>
