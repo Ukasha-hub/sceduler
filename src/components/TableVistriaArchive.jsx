@@ -1,48 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const TableVistriaArchive = ({  onMoveRow, from }) => {
+const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoadingAPI ,selectedSource, setSelectedSource, filteredDataRazuna , setFilteredDataRazuna , onMoveRow, from }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [data, setData] = useState([]);  
-  const [filteredData, setFilteredData] = useState(data);
-  const [selectedSource, setSelectedSource] = useState('Razuna'); // default checked
+  
+  
+  // default checked
   const [selectedFilter, setSelectedFilter] = useState(""); 
-  const [loading, setLoading] = useState(true); // ✅ Loading state
+ // ✅ Loading state
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, row: null });
-  const [menuLoading, setMenuLoading] = useState(false);
+ 
 
-  useEffect(() => {
-    if (selectedSource !== "Razuna") return; // only fetch for Razuna
-  
-    setLoading(true);
-    fetch("/api/v1/media/?alias=Razuna")
-      .then((res) => res.json())
-      .then((responseData) => {
-        const formatted = responseData.data.map((item) => ({
-          name: item.VID_FILENAME,
-          id: item.VID_ID,
-          duration: "-",
-          status: "Okay",
-          size: item.VID_SIZE_GB,
-          type: item.VID_FILENAME.split("_")[0] || "Other"
-        }));
-  
-        setData(formatted);
-        setFilteredData(formatted);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Fetch Error:", err);
-        setLoading(false);
-      });
-  }, [selectedSource]); // ✅ dependency added
-  
+ 
 
   // Clear table when Vistria is selected
   useEffect(() => {
     if (selectedSource !== "Razuna") {
-      setData([]);
-      setFilteredData([]);
-      setLoading(false); // no loading for Vistria
+      setRazunaData([]);
+      setFilteredDataRazuna([]);
+      setLoadingAPI(false); // no loading for Vistria
     }
   }, [selectedSource]);
 
@@ -81,8 +56,8 @@ const TableVistriaArchive = ({  onMoveRow, from }) => {
     
 
     useEffect(() => {
-      setFilteredData(
-        data.filter((row) => {
+      setFilteredDataRazuna(
+        RazunaData.filter((row) => {
           const matchesSearch =
             row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             row.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,7 +69,7 @@ const TableVistriaArchive = ({  onMoveRow, from }) => {
           return matchesSearch && matchesFilter;
         })
       );
-    }, [searchTerm, selectedFilter, data]);
+    }, [searchTerm, selectedFilter, RazunaData]);
 
     const getRowColor = (type) => {
       switch (type) {
@@ -204,8 +179,8 @@ const TableVistriaArchive = ({  onMoveRow, from }) => {
 
       {/* Table */}
       <div className="overflow-x-auto relative">
-      <div className="max-h-[500px] overflow-y-auto">
-      {loading ? (
+      <div className="max-h-[77vh] overflow-y-auto">
+      {loadingAPI ? (
           <div className="flex flex-col justify-center items-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
             <p className="mt-2 text-sm text-gray-600">Loading...</p>
@@ -221,14 +196,14 @@ const TableVistriaArchive = ({  onMoveRow, from }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.length === 0 ? (
+              {filteredDataRazuna.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="px-4 py-6 text-center text-gray-500 italic">
                     No data
                   </td>
                 </tr>
               ) : (
-                filteredData.map((row) => (
+                filteredDataRazuna.map((row) => (
                   <tr
                     key={row.id}
                     draggable

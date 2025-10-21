@@ -9,6 +9,7 @@ import FilterSetup from "../pages/FilterSetup";
 import SchedulerTable from "../pages/SchedulerTable";
 import ClearSchedule from "../pages/ClearSchedule";
 import ServerSetup from "../pages/ServerSetup";
+import HourlyAdSettings from "../pages/HourlyAdSettings";
 
 function SideNav({ onOpenTab }) {
   const location = useLocation();
@@ -177,6 +178,17 @@ function SideNav({ onOpenTab }) {
                   >
                     <i className="far fa-circle nav-icon text-white" />
                     <p className="text-white">Server Setup</p>
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className="nav-link text-left w-100"
+                    onClick={() =>
+                      onOpenTab("hourlyadSetup", "Hourly Ad Setup", <HourlyAdSettings></HourlyAdSettings>)
+                    }
+                  >
+                    <i className="far fa-circle nav-icon text-white" />
+                    <p className="text-white">Hourly Ad Setup</p>
                   </button>
                 </li>
               </ul>
