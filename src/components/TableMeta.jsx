@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import UpdateSchedulerModal from "./UpdateSchedulerModal";
+import UpdateSchedulerModal from "./Modal/UpdateSchedulerModal";
 import { ToastContainer, toast } from 'react-toastify';
 
 const TableMeta = ( {data, onMoveRow, from, 
@@ -93,9 +93,13 @@ const formatTimeWithFrame = (tp) => {
 };
 
 const typeColors = {
-  PGM: "#E3F2FD",   // light blue
-  COM: "#FFEBEE",   // light red
-  PROMO: "#E8F5E9", // light green
+   PGM:  "#BFDBFE",      // bg-blue-100
+    COM:  "#FEF3C7",      // bg-yellow-100
+   FILLER:  "#E9D5FF",   // bg-purple-100
+     COM_GFX:  "#FBCFE8",  // bg-pink-100
+   GFX:  "#FFD7AA",     // bg-orange-100
+     PROMO:  "#CCFBF1",    // bg-teal-100
+    TEASER:  "#C7D2FE", 
   // add more types here
 };
 

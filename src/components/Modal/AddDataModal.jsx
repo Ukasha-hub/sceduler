@@ -36,7 +36,7 @@ if (pendingRow) {
   const [prevHH, prevMM, prevSS] = prevTimeStr.split(":").map(v => parseInt(v, 10) || 0);
 
   const prevFF =
-    pendingRow.prevTimePeriod?.frame ??
+    pendingRow.prevTimePeriod?.frameRate ??
     (typeof pendingRow.prevFrameRate === "number" ? pendingRow.prevFrameRate % FPS : 0);
 
   const [durH, durM, durS, durF] = (pendingRow.duration || "00:00:00:00").split(":").map(v => parseInt(v, 10) || 0);
@@ -249,7 +249,7 @@ if (pendingRow) {
 {/* Time Period */}
 <h6 className="font-bold text-xs mt-2">Time Period </h6>
 <div className="flex flex-row flex-wrap gap-2">
-  {["hour", "minute", "second", "frame"].map((type, idx) => (
+  {["hour", "minute", "second", "frameRate"].map((type, idx) => (
     <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
       <input
         type="text"
@@ -265,8 +265,8 @@ if (pendingRow) {
             : (() => {
                 const FPS = 25;
                 // If a structured prevTimePeriod exists, prefer its frame
-                if (pendingRow?.prevTimePeriod && typeof pendingRow.prevTimePeriod.frame === "number") {
-                  return String(pendingRow.prevTimePeriod.frame).padStart(2, "0");
+                if (pendingRow?.prevTimePeriod && typeof pendingRow.prevTimePeriod.frameRate === "number") {
+                  return String(pendingRow.prevTimePeriod.frameRate).padStart(2, "0");
                 }
                 // If prevFrameRate already stored as numeric frame component
                 if (typeof pendingRow?.prevFrameRate === "number") {

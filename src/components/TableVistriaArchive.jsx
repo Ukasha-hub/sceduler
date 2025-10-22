@@ -8,7 +8,8 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
   const [selectedFilter, setSelectedFilter] = useState(""); 
  // ✅ Loading state
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, row: null });
- 
+  const [metadataModal, setMetadataModal] = useState({ visible: false, row: null });
+
 
  
 
@@ -87,13 +88,14 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
     const handleContextMenu = (e, row) => {
       e.preventDefault();
     
-      setContextMenu(prev => ({
+      setContextMenu({
         visible: true,
-        x: e.pageX,
-        y: e.pageY,
+        x: e.clientX, // relative to viewport
+        y: e.clientY,
         row
-      }));
+      });
     };
+    
     
     
     
@@ -179,7 +181,7 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
 
       {/* Table */}
       <div className="overflow-x-auto relative">
-      <div className="max-h-[77vh] overflow-y-auto">
+      <div className="max-h-[73vh] overflow-y-auto">
       {loadingAPI ? (
           <div className="flex flex-col justify-center items-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
@@ -226,6 +228,41 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
       </div>
         
       </div>
+      {metadataModal.visible && (
+  <div
+    className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
+    onClick={() => setMetadataModal({ visible: false, row: null })}
+  >
+    <div
+      className="bg-white rounded-lg p-4 w-[80vw] lg:w-[40vw]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="font-bold text-md mb-2">Metadata Info</h3>
+      <div className="text-sm space-y-1">
+        <div className="break-words"><strong>Name:</strong> {metadataModal.row.name}</div>
+        <div className="break-words"><strong>ID:</strong> {metadataModal.row.id}</div>
+        <div><strong>Duration:</strong> {metadataModal.row.duration}</div>
+        <div><strong>Create Date:</strong> {metadataModal.row.createDate}</div>
+        <div><strong>Duration (s):</strong> {metadataModal.row.duration_seconds}</div>
+        <div><strong>FPS:</strong> {metadataModal.row.fps}</div>
+        <div><strong>Height:</strong> {metadataModal.row.height}</div>
+        <div><strong>Width:</strong> {metadataModal.row.width}</div>
+        <div><strong>Size:</strong> {metadataModal.row.size}</div>
+        <div><strong>Type:</strong> {metadataModal.row.type}</div>
+        <div><strong>Bitrate:</strong> {metadataModal.row.bitrate}</div>
+      </div>
+      <div className="flex justify-end mt-4">
+        <button
+          className="px-3 py-1 bg-blue-500 text-white rounded"
+          onClick={() => setMetadataModal({ visible: false, row: null })}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       {contextMenu.visible && (
   <div className="fixed inset-0 z-40" onClick={() => setContextMenu({ visible: false })}>
     <div
@@ -239,9 +276,19 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
       >
         Download
       </button>
+      <button
+    className="px-4 py-2 hover:bg-gray-100 w-full text-left"
+    onClick={() => {
+      setMetadataModal({ visible: true, row: contextMenu.row });
+      setContextMenu({ ...contextMenu, visible: false });
+    }}
+  >
+    Metadata
+  </button>
     </div>
   </div>
 )}
+
     </div>
   );
 };

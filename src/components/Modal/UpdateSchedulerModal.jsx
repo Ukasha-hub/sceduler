@@ -45,6 +45,9 @@ const UpdateSchedulerModal = ({
                   type="text"
                   className="form-control form-control-sm text-xs"
                   value={formInputs.slug || ""}
+                  onChange={(e) =>
+                    setFormInputs({ ...formInputs, slug: e.target.value })
+                  }
                 
                 />
               </div>
@@ -55,7 +58,10 @@ const UpdateSchedulerModal = ({
                 <input
                   type="checkbox"
                   className="form-check-input"
-                  checked={formInputs.check || false}
+                  checked={formInputs.repeat || false}
+                  onChange={(e) =>
+                    setFormInputs({ ...formInputs, repeat: e.target.checked })
+                  }
                  
                 />
                 <label className="ml-1 mb-0 text-xs">Repeat</label>
@@ -82,7 +88,9 @@ const UpdateSchedulerModal = ({
                   type="checkbox"
                   className="form-check-input"
                   checked={formInputs.isCommercial || false}
-                
+                  onChange={(e) =>
+                    setFormInputs({ ...formInputs, isCommercial: e.target.checked })
+                  }
                 />
                 <label className="ml-1 mb-0 text-xs">is Commercial</label>
               </div>
@@ -102,6 +110,9 @@ const UpdateSchedulerModal = ({
                   type="text"
                   className="form-control form-control-sm text-xs"
                   value={formInputs.rateAgreementNo || ""}   // ✅ instead of category
+                  onChange={(e) =>
+                    setFormInputs({ ...formInputs, rateAgreementNo: e.target.value })
+                  }
                
                 />
                 <p className="text-gray-500 text-xs">Mandatory for COM</p>
@@ -111,7 +122,10 @@ const UpdateSchedulerModal = ({
                 <input
                   type="text"
                   className="form-control form-control-sm text-xs"
-                  value={formInputs.agency || ""}           // ✅ instead of category
+                  value={formInputs.agency || ""}    
+                  onChange={(e) =>
+                    setFormInputs({ ...formInputs, agency: e.target.value })
+                  }       // ✅ instead of category
                   
                 />
                  <p className="text-gray-500 text-xs">Mandatory for COM</p>
@@ -200,6 +214,9 @@ const UpdateSchedulerModal = ({
                   type="checkbox"
                   className="form-check-input"
                   checked={formInputs.bonus || false}
+                  onChange={(e) =>
+                    setFormInputs({ ...formInputs, bonus: e.target.checked })
+                  }
                  
                   
                 />
@@ -207,9 +224,19 @@ const UpdateSchedulerModal = ({
               </div>
               <div className="form-group" style={{ flex: "0 0 25%" }}>
                 <label className="text-xs">Select Spot</label>
-                <select className="form-control form-control-sm text-xs">
-                  <option>Just Before</option>
-                  <option>Super</option>
+                <select
+                  className="form-control form-control-sm text-xs"
+                  value={formInputs.selectSpot || ""}   // controlled
+                  onChange={(e) =>
+                    setFormInputs({
+                      ...formInputs,
+                      selectSpot: e.target.value,       // saved into formInputs
+                    })
+                  }
+                >
+                <option value="">--Select--</option>
+                  <option value="Just Before">Just Before</option>
+                  <option value="Super">Super</option>
                 </select>
               </div>
             </div>
