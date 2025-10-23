@@ -226,7 +226,7 @@ if (pendingRow) {
                  <p className="text-gray-500 text-xs">Mandatory for COM</p>
               </div>
               <div className="form-group" style={{ flex: "0 0 50%" }}>
-                <label className="text-xs">Project Name</label>
+                <label className="text-xs">File Name</label>
                 <input
                   type="text"
                   className="form-control form-control-sm w-full text-xs"
@@ -247,7 +247,7 @@ if (pendingRow) {
 
             {/* Time Period */}
 {/* Time Period */}
-<h6 className="font-bold text-xs mt-2">Time Period </h6>
+<h6 className="font-bold text-xs mt-2">Time Period (Start Time) </h6>
 <div className="flex flex-row flex-wrap gap-2">
   {["hour", "minute", "second", "frameRate"].map((type, idx) => (
     <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>

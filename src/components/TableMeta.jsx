@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import UpdateSchedulerModal from "./Modal/UpdateSchedulerModal";
 import { ToastContainer, toast } from 'react-toastify';
+import AddDataModal from "./Modal/AddDataModal";
+import AddNewRowModal from "./Modal/AddNewRowModal";
 
 const TableMeta = ( {data, onMoveRow, from, 
   columns, 
@@ -42,8 +44,18 @@ const [showUpdate, setShowUpdate] = useState(false);
 
 const [selectedRows, setSelectedRows] = useState([]);
 const [clipboard, setClipboard] = useState(null);
+const [showAddNewModal, setShowAddNewModal] = useState(false);
+const [pendingRow, setLocalPendingRow] = useState(null);
 
 //console.log("dataDATA",data)
+
+const handleAddNewConfirm = (newRowData) => {
+  const newRow = {
+    id: Date.now(),
+    ...newRowData,
+  };
+  setMetaData((prev) => [...prev, newRow]);
+};
 
 
 
@@ -57,7 +69,9 @@ const [formInputs, setFormInputs] = useState({
   bonus: false,
 });
 
-
+useEffect(() => {
+  console.log("Modal state changed:", showAddNewModal);
+}, [showAddNewModal]);
 
 
 useEffect(() => {
@@ -628,6 +642,20 @@ useEffect(() => {
   </button>
 )}
 
+<button
+  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+  onClick={() => {
+    setShowAddNewModal(true);  // open the modal
+    setPendingRow(selectedRow || null); // optional: set context
+    setFormInputs({}); // reset form if needed
+    setContextMenu(null); // close context menu
+  }}
+
+>
+  Add File
+</button>
+
+
  {/* Copy Button */}
  {/* Copy Button */}
  <button
@@ -704,6 +732,17 @@ useEffect(() => {
     }}
   />
 )}
+
+<AddNewRowModal
+  show={showAddNewModal}
+  onClose={() => setShowAddNewModal(false)}
+   onConfirm={handleAddNewConfirm}
+  formInputs={formInputs}
+  setFormInputs={setFormInputs}
+  pendingRow={pendingRow}
+/>
+
+
 
 </div>
 

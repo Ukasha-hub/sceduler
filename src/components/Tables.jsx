@@ -980,8 +980,7 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
     const prevAccumTP = prevRow ? prevRow.timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
 
     // Compute new accumulated timePeriod (STOPWATCH MODE)
-    console.log("jjj", prevAccumTP, item.duration )
-    console.log("metadata", metaData)
+    
     const timePeriod = computeTimePeriod(prevAccumTP, item.duration || "00:00:00:00");
     // console.log("item startDate",item.startTime)
     
