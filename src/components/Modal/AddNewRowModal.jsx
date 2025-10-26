@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 const AddNewRowModal  = ({
     show,
@@ -8,8 +8,15 @@ const AddNewRowModal  = ({
     setFormInputs,
     pendingRow
   }) => {
+      const [localDuration, setLocalDuration] = useState("00:00:00:00");
+
+// keep it in sync when formInputs changes
+useEffect(() => {
+  setLocalDuration(formInputs.duration || "00:00:00:00");
+}, [formInputs.duration]);
+
     if (!show) return null; // Don't render if not visible
-   // console.log("PENDING ROW",pendingRow.prevEndTime)
+   console.log("PENDING ROW",pendingRow)
     const isFormValid = (() => {
       const currentType = formInputs.type || pendingRow?.type || ""; // ✅ normalize
     
@@ -22,6 +29,8 @@ const AddNewRowModal  = ({
       }
       return true;
     })();
+
+   
   
     const frame = pendingRow?.timePeriod?.frame ?? 0;
     console.log("formInputs",formInputs)
@@ -68,36 +77,37 @@ const AddNewRowModal  = ({
       `${String(finalFrames).padStart(2, "0")}`;
   }
 
-  const handleSubmit = () => {
-    const { name, type, duration } = formInputs;
+ const handleSubmit = () => {
+  const { name, type, duration } = formInputs;
 
-    // 🔹 Validation for mandatory fields
-    if (!name || !type || !duration) {
-      alert("Please fill all mandatory fields: Name, Type, and Duration!");
-      return;
-    }
+  if (!name || !type || !duration) {
+    alert("Please fill all mandatory fields: Name, Type, and Duration!");
+    return;
+  }
 
-    onConfirm(formInputs);
+  onConfirm(formInputs); // call parent handler to add row
+  onClose();             // close modal ✅
 
-    // Reset fields after submission
-    setFormInputs({
-        date: "", 
-        id: "",
-        slug: "", 
-      name: "",
-      type: "",
-      rateAgreementNo: "",
-      agency: "",
-      duration: "",
-      selectOption: "", 
+  // Reset form fields
+  setFormInputs({
+    date: "", 
+    id: "",
+    slug: "", 
+    name: "",
+    type: "",
+    rateAgreementNo: "",
+    agency: "",
+    duration: "",
+    selectOption: "", 
     bonus: false, 
     selectSpot: "",
     repeat: false, 
-    
-    com: false, 
-    });
-  };
+    com: false,
+  });
+};
+
   
+ 
   
     return (
       <div
@@ -131,13 +141,17 @@ const AddNewRowModal  = ({
               <div className="flex flex-row flex-wrap gap-2">
                 <div className="form-group" style={{ flex: "0 0 30%" }}>
                   <label className="text-xs">Date</label>
-                  <input
-    type="date"
-    className="form-control form-control-sm text-xs"
-    value={formInputs.date}
-    onChange={(e) => setFormInputs({ ...formInputs, date: e.target.value })}
-    readOnly
-  />
+                 <input
+  type="date"
+  className="form-control form-control-sm text-xs"
+  value={
+    formInputs.date ||
+    new Date().toISOString().split("T")[0] // today's date if empty
+  }
+  onChange={(e) => setFormInputs({ ...formInputs, date: e.target.value })}
+  readOnly
+/>
+
                 </div>
                 <div className="form-group" style={{ flex: "0 0 30%" }}>
                   <label className="text-xs">Slug</label>
@@ -274,7 +288,7 @@ const AddNewRowModal  = ({
                   <input
                     type="text"
                     className="form-control form-control-sm text-xs"
-                    value={Date.now()+ Math.random()}
+                    value={formInputs.id}
                     onChange={(e) =>
                         setFormInputs({
                           ...formInputs,
@@ -332,33 +346,36 @@ const AddNewRowModal  = ({
   {/* Duration */}
 <h6 className="font-bold text-xs mt-2">Duration</h6>
 <div className="flex flex-row flex-wrap gap-2">
-  {(() => {
-    const [h = "00", m = "00", s = "00", f = "00"] = (formInputs.duration || "00:00:00:00").split(":");
+  {["hour", "minute", "second", "frame"].map((label, idx) => {
+    const durationParts = (localDuration || "00:00:00:00").split(":");
+    const val = durationParts[idx] || "00";
 
-    const values = [h, m, s, f];
-
-    return values.map((val, idx) => (
+    return (
       <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
         <input
           type="text"
           className="form-control form-control-sm text-xs"
           maxLength={2}
-          placeholder="00"
+          placeholder=""
           value={val}
           onChange={(e) => {
-            const newVal = e.target.value.padStart(2, "0"); // optional: keep 2 digits
-            const updatedValues = [...values];
-            updatedValues[idx] = newVal;
+            const newVal = e.target.value.replace(/\D/g, "").padStart(2, "0"); // only digits
+            const updated = [...durationParts];
+            updated[idx] = newVal;
+            const newDuration = updated.join(":");
+            setLocalDuration(newDuration);
             setFormInputs({
               ...formInputs,
-              duration: updatedValues.join(":"), // ✅ Rebuild full duration
+              duration: newDuration,
             });
           }}
         />
       </div>
-    ));
-  })()}
+    );
+  })}
 </div>
+
+
   
   
   
@@ -419,8 +436,8 @@ const AddNewRowModal  = ({
               </button>
               <button
     className="btn btn-primary btn-sm"
-    onClick={onConfirm}
-    disabled={!isFormValid}
+   onClick={handleSubmit}
+  disabled={!isFormValid}
   >
     Add
   </button>

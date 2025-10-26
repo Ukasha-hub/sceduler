@@ -1343,6 +1343,7 @@ const getToday = () => {
                     onSearch={handleSearch}
                     formatDateTimeWithFrame={formatDateTimeWithFrame}
                     onSort={handleSort}
+                    pendingRow={pendingRow}
                     setPendingRow={     setPendingRow}
                     recalcSchedule={recalcSchedule}
                     setMetaData={ setMetaData}

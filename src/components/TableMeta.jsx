@@ -14,6 +14,7 @@ const TableMeta = ( {data, onMoveRow, from,
   onRowClick,
   prevTimePeriod,
   setPendingRow,
+  pendingRow,
   setMetaData,
   handleAddConfirm ,
   computeTimePeriod,
@@ -45,7 +46,10 @@ const [showUpdate, setShowUpdate] = useState(false);
 const [selectedRows, setSelectedRows] = useState([]);
 const [clipboard, setClipboard] = useState(null);
 const [showAddNewModal, setShowAddNewModal] = useState(false);
-const [pendingRow, setLocalPendingRow] = useState(null);
+
+useEffect(() => {
+  console.log("data changed:", data);
+}, [data]);
 
 //console.log("dataDATA",data)
 
@@ -60,13 +64,19 @@ const handleAddNewConfirm = (newRowData) => {
 
 
 const [formInputs, setFormInputs] = useState({
-  date: "",
-  category: "",
-  check: false,
+ date: new Date().toISOString().split("T")[0],
+  id: Date.now()+ Math.random(),
+  slug: "",
+  name: "",
   type: "",
-  isCommercial: false,
-  endDate: "",
+  rateAgreementNo: "",
+  agency: "",
+  duration: "",
+  selectOption: "",
   bonus: false,
+  selectSpot: "",
+  repeat: false,
+  com: false,
 });
 
 useEffect(() => {
@@ -439,6 +449,101 @@ useEffect(() => {
   return () => document.removeEventListener("contextmenu", handleOutsideRightClick);
 }, []);
 
+const handleAddFile = (row) => {
+  if (!row) return;
+
+  const prevEndTime = row.endTime || "1970-01-01 00:00:00";
+  const prevTimePeriod = row.timePeriod || {};
+  const prevFrameRate = prevTimePeriod.frameRate || 0;
+
+  setPendingRow({
+    __insertAfterId: row.id,
+    __insertAfterName: row.name,
+    prevEndTime,
+    prevTimePeriod,
+    prevFrameRate,
+    duration: "00:00:00:00",
+    type: row.type,
+  });
+
+  setShowAddNewModal(true);
+};
+
+const handleConfirmAddFile = (newRowData) => {
+  console.log("pendingRow:", pendingRow)
+  if (!pendingRow) return;
+
+  const insertAfterId = pendingRow.__insertAfterId;
+  const rowIndex = data.findIndex((r) => r.id === insertAfterId);
+
+  // Compute new start and end time
+  const FPS = 25;
+  const [prevDateStr, prevTimeStr] = (pendingRow.prevEndTime || "1970-01-01 00:00:00").split(" ");
+  const [prevHH, prevMM, prevSS] = prevTimeStr.split(":").map(Number);
+  const prevFF = pendingRow.prevTimePeriod?.frameRate ?? (pendingRow.prevFrameRate % FPS || 0);
+  const [durH, durM, durS, durF] = (newRowData.duration || "00:00:00:00")
+    .split(":")
+    .map((v) => parseInt(v, 10) || 0);
+
+  let totalFrames =
+    ((prevHH * 3600 + prevMM * 60 + prevSS) * FPS + prevFF) +
+    ((durH * 3600 + durM * 60 + durS) * FPS + durF);
+
+  const finalHours = Math.floor(totalFrames / (FPS * 3600));
+  totalFrames %= FPS * 3600;
+  const finalMinutes = Math.floor(totalFrames / (FPS * 60));
+  totalFrames %= FPS * 60;
+  const finalSeconds = Math.floor(totalFrames / FPS);
+  const finalFrames = totalFrames % FPS;
+
+  const dayOffset = Math.floor(finalHours / 24);
+  const displayHours = finalHours % 24;
+
+  const prevDate = new Date(prevDateStr);
+  prevDate.setDate(prevDate.getDate() + dayOffset);
+  const finalEndDate = prevDate.toISOString().split("T")[0];
+
+  const finalEndTime =
+    `${String(displayHours).padStart(2, "0")}:` +
+    `${String(finalMinutes).padStart(2, "0")}:` +
+    `${String(finalSeconds).padStart(2, "0")}:` +
+    `${String(finalFrames).padStart(2, "0")}`;
+
+  const newRow = {
+    ...newRowData,
+    id: Date.now(),
+    startTime: pendingRow.prevEndTime,
+    endTime: `${finalEndDate} ${finalEndTime}`,
+    timePeriod: {
+      hour: prevHH,
+      minute: prevMM,
+      second: prevSS,
+      frameRate: prevFF,
+    },
+     prevTimePeriod: pendingRow.prevTimePeriod || { hour: 0, minute: 0, second: 0, frameRate: 0 },
+  };
+ console.log("NEW ROW", newRow)
+  // ✅ Insert new row into parent data array
+ setMetaData(prev => {
+  const updated = [...prev];
+  const insertIndex = rowIndex >= 0 ? rowIndex + 1 : updated.length;
+  updated.splice(insertIndex, 0, newRow);
+  return recalcSchedule ? recalcSchedule(updated) : updated;
+});
+
+// also update filteredData locally
+setFilteredData(prev => {
+  const updated = [...prev];
+  const insertIndex = rowIndex >= 0 ? rowIndex + 1 : updated.length;
+  updated.splice(insertIndex, 0, newRow);
+  return updated;
+});
+  console.log("data after add", data)
+  setShowAddNewModal(false);
+  setPendingRow(null);
+};
+
+
 
   
     return (
@@ -511,6 +616,7 @@ useEffect(() => {
   </label>
     </th>
     <th className="px-4 py-3 w-[20px]">ID</th>
+    
     <th className="px-4 py-3 w-[80px]">Start Time</th>
     <th className="px-4 py-3 w-[80px]">End Time</th>
     <th className="px-4 py-3 w-[150px]">Programme Name</th>
@@ -645,9 +751,7 @@ useEffect(() => {
 <button
   className="block w-full text-left px-4 py-2 hover:bg-gray-100"
   onClick={() => {
-    setShowAddNewModal(true);  // open the modal
-    setPendingRow(selectedRow || null); // optional: set context
-    setFormInputs({}); // reset form if needed
+    handleAddFile(selectedRow)
     setContextMenu(null); // close context menu
   }}
 
@@ -736,7 +840,7 @@ useEffect(() => {
 <AddNewRowModal
   show={showAddNewModal}
   onClose={() => setShowAddNewModal(false)}
-   onConfirm={handleAddNewConfirm}
+  onConfirm={handleConfirmAddFile}
   formInputs={formInputs}
   setFormInputs={setFormInputs}
   pendingRow={pendingRow}
