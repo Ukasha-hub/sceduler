@@ -188,20 +188,28 @@ useEffect(() => {
   
               <div className="flex flex-row flex-wrap gap-2 mt-1">
                 <div className="form-group" style={{ flex: "0 0 30%" }}>
-    <label className="text-xs">Type</label>
-    <input
-      type="text"
-      className="form-control form-control-sm text-xs"
-      value={formInputs.type || ""}
-      onChange={(e) =>
-        setFormInputs({
-          ...formInputs,
-          type: e.target.value,
-        })
-      }
-      
-    />
-  </div>
+  <label className="text-xs">Type</label>
+  <select
+    className="form-control form-control-sm text-xs"
+    value={formInputs.type || ""}
+    onChange={(e) =>
+      setFormInputs({
+        ...formInputs,
+        type: e.target.value,
+      })
+    }
+  >
+    <option value="">--Select Type--</option>
+    <option value="PGM">PGM</option>
+    <option value="COM">COM</option>
+    <option value="FILLER">FILLER</option>
+    <option value="COM-GFX">COM-GFX</option>
+    <option value="GFX">GFX</option>
+    <option value="PROMO">PROMO</option>
+    <option value="TEASER">TEASER</option>
+  </select>
+</div>
+
                 <div
                   className="form-group flex items-center ml-4 mb-0"
                   style={{ flex: "0 0 30%" }}
@@ -347,8 +355,8 @@ useEffect(() => {
 <h6 className="font-bold text-xs mt-2">Duration</h6>
 <div className="flex flex-row flex-wrap gap-2">
   {["hour", "minute", "second", "frame"].map((label, idx) => {
-    const durationParts = (localDuration || "00:00:00:00").split(":");
-    const val = durationParts[idx] || "00";
+    const durationParts = (localDuration || "::::").split(":"); // allow empty strings
+    let val = durationParts[idx] || "";
 
     return (
       <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
@@ -356,12 +364,38 @@ useEffect(() => {
           type="text"
           className="form-control form-control-sm text-xs"
           maxLength={2}
-          placeholder=""
+          placeholder="00"
           value={val}
           onChange={(e) => {
-            const newVal = e.target.value.replace(/\D/g, "").padStart(2, "0"); // only digits
+            let newVal = e.target.value.replace(/\D/g, ""); // only digits
+
+            // clamp value according to index
+            if (newVal !== "") {
+              const num = parseInt(newVal, 10);
+              if (idx === 0) newVal = Math.min(num, 23).toString();
+              else if (idx === 1 || idx === 2) newVal = Math.min(num, 59).toString();
+              else if (idx === 3) newVal = Math.min(num, 24).toString();
+            }
+
             const updated = [...durationParts];
             updated[idx] = newVal;
+            const newDuration = updated.join(":");
+            setLocalDuration(newDuration);
+            setFormInputs({
+              ...formInputs,
+              duration: newDuration,
+            });
+          }}
+          onFocus={(e) => e.target.select()} // auto-select for easy override
+          onBlur={() => {
+            // pad empty fields and clamp ranges on blur
+            const updated = [...durationParts].map((p, i) => {
+              let num = parseInt(p, 10) || 0;
+              if (i === 0) num = Math.min(num, 23);
+              else if (i === 1 || i === 2) num = Math.min(num, 59);
+              else if (i === 3) num = Math.min(num, 24);
+              return String(num).padStart(2, "0");
+            });
             const newDuration = updated.join(":");
             setLocalDuration(newDuration);
             setFormInputs({
@@ -374,6 +408,8 @@ useEffect(() => {
     );
   })}
 </div>
+
+
 
 
   

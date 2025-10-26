@@ -589,16 +589,17 @@ setFilteredData(prev => {
 
         <table
   className="datatable-table table table-hover min-w-[300px]"
-  onContextMenu={(e) => {
-    e.preventDefault();
-    // Only trigger if clicking on blank space
-    if (e.target.closest("tr") || e.target.closest("td")) return;
-    if (!clipboard) return;
+   onContextMenu={(e) => {
+       e.preventDefault();
+       if (filteredData.length > 0) return; // rows already handle right-click
 
-    // Optional: prompt for new date
-    const newDate = prompt("Enter new date (YYYY-MM-DD) or leave blank to keep original:");
-    handlePaste(null, newDate || null); // null = append at end
-  }}>
+       // Empty table right-click → show context menu
+       setSelectedRow(null); // no actual row selected
+       setContextMenu({
+         mouseX: e.clientX + 2,
+         mouseY: e.clientY - 6,
+       });
+     }}>
 
 <thead className="bg-gray-100">
   <tr >
@@ -690,138 +691,124 @@ setFilteredData(prev => {
 
   </table>
   {contextMenu && (
- <div
- className="custom-context-menu fixed bg-white border rounded shadow-md z-50 text-sm"
- style={{
-   top: contextMenu.mouseY,
-   left: contextMenu.mouseX,
- }}
- onMouseLeave={() => setContextMenu(null)}
->
- {/* Update Button */}
- {selectedRows.length === 1 && (
-  <button
-    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-    onClick={() => {
-      // ✅ Set form values from selectedRow before opening modal
-     const row = selectedRow;
-     if (row) {
-      setFormInputs({
-        date: row.startDate || row.startTime?.split(" ")[0] || "",
-    
-        endDate: row.endDate || row.endTime?.split(" ")[0] || "",
-    
-        category: row.category || "",
-    
-        type: row.type || "",
-    
-        isCommercial: row.isCommercial || false,
-    
-        bonus: row.bonus || false,
-    
-        rateAgreementNo: row.rateAgreementNo || "",
-    
-        agency: row.agency || "",
-    
-        slug: row.slug || "",
-    
-        spotType: row.spotType || "",
-    
-        check: row.repeat || false,
-    
-        projectName: row.name || "",
-    
-        assetId: row.id || "",
-    
-        timePeriod: row.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 },
-    
-        duration: row.duration || "00:00:00:00",
-      });
-    }
-
-    setContextMenu(null);
-    setShowUpdate(true);
-   
+  <div
+    className="custom-context-menu fixed bg-white border rounded shadow-md z-50 text-sm"
+    style={{
+      top: contextMenu.mouseY,
+      left: contextMenu.mouseX,
     }}
+    onMouseLeave={() => setContextMenu(null)}
   >
-    Update
-  </button>
+    {/* Only show Update if one row is selected */}
+    {selectedRows.length === 1 && selectedRow && (
+      <button
+        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+        onClick={() => {
+          const row = selectedRow;
+          if (row) {
+            setFormInputs({
+              date: row.startDate || row.startTime?.split(" ")[0] || "",
+              endDate: row.endDate || row.endTime?.split(" ")[0] || "",
+              category: row.category || "",
+              type: row.type || "",
+              isCommercial: row.isCommercial || false,
+              bonus: row.bonus || false,
+              rateAgreementNo: row.rateAgreementNo || "",
+              agency: row.agency || "",
+              slug: row.slug || "",
+              spotType: row.spotType || "",
+              check: row.repeat || false,
+              projectName: row.name || "",
+              assetId: row.id || "",
+              timePeriod: row.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 },
+              duration: row.duration || "00:00:00:00",
+            });
+          }
+
+          setContextMenu(null);
+          setShowUpdate(true);
+        }}
+      >
+        Update
+      </button>
+    )}
+
+    {/* Always show Add File */}
+    <button
+      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+      onClick={() => {
+        handleAddFile(selectedRow || { // dummy row for empty table
+          id: null,
+          name: "New File",
+          endTime: "1970-01-01 00:00:00",
+          timePeriod: { hour: 0, minute: 0, second: 0, frameRate: 0 },
+          type: "PGM",
+        });
+        setContextMenu(null);
+      }}
+    >
+      Add File
+    </button>
+
+    {/* Copy / Paste / Delete only if there are selected rows */}
+    {selectedRows.length > 0 && (
+      <>
+        <button
+          onClick={handleCopyRows}
+          className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+        >
+          Copy
+        </button>
+
+        {clipboard && (
+          <button
+            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+            onClick={() => {
+              handlePaste(selectedRow?.id || null); // paste after selected row
+              setContextMenu(null);
+            }}
+          >
+            Paste
+          </button>
+        )}
+
+        <button
+          className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
+          onClick={() => {
+            if (selectedRows.length === 0) return;
+
+            // Split local vs parent
+            const localRowsToDelete = [];
+            const parentRowsToDelete = [];
+
+            selectedRows.forEach(id => {
+              const parentRow = data.find(r => r.id === id);
+              if (parentRow) parentRowsToDelete.push(parentRow);
+              else {
+                const localRow = filteredData.find(r => r.id === id);
+                if (localRow) localRowsToDelete.push(localRow);
+              }
+            });
+
+            // Remove local rows
+            setFilteredData(prev => prev.filter(r => !selectedRows.includes(r.id)));
+
+            // Remove parent rows using onDeleteRow
+            parentRowsToDelete.forEach(row => {
+              if (onDeleteRow) onDeleteRow(row.id);
+            });
+
+            setSelectedRows([]);
+            setContextMenu(null);
+          }}
+        >
+          Delete
+        </button>
+      </>
+    )}
+  </div>
 )}
 
-<button
-  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-  onClick={() => {
-    handleAddFile(selectedRow)
-    setContextMenu(null); // close context menu
-  }}
-
->
-  Add File
-</button>
-
-
- {/* Copy Button */}
- {/* Copy Button */}
- <button
-  onClick={handleCopyRows}
-  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
->
-  Copy
-</button>
-
-{contextMenu && clipboard && (
-  <button
-    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-    onClick={() => {
-      handlePaste(selectedRow?.id || null); // paste after selected row
-      setContextMenu(null);
-    }}
-  >
-    Paste
-  </button>
-)}
-
-
-
-
- {/* Delete Button */}
-
-<button
-  className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
-  onClick={() => {
-    if (selectedRows.length === 0) return;
-
-    // Split local vs parent
-    const localRowsToDelete = [];
-    const parentRowsToDelete = [];
-
-    selectedRows.forEach(id => {
-      const parentRow = data.find(r => r.id === id);
-      if (parentRow) parentRowsToDelete.push(parentRow);
-      else {
-        const localRow = filteredData.find(r => r.id === id);
-        if (localRow) localRowsToDelete.push(localRow);
-      }
-    });
-
-    // Remove local rows
-    setFilteredData(prev => prev.filter(r => !selectedRows.includes(r.id)));
-
-    // Remove parent rows using onDeleteRow
-    parentRowsToDelete.forEach(row => {
-      if (onDeleteRow) onDeleteRow(row.id);
-    });
-
-    setSelectedRows([]);
-    setContextMenu(null);
-  }}
->
-  Delete
-</button>
-
-
-</div>
-)}
 
 {showUpdate && (
   <UpdateSchedulerModal
