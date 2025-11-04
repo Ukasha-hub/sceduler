@@ -3,9 +3,15 @@ import { Navigate } from 'react-router-dom';
 
 // ✅ Lazy load components for better performance
 const Home = lazy(() => import('../pages/Home'));
+const DAM = lazy(() => import('../pages/DAM'));
 const DashboardV2 = lazy(() => import('../pages/DashboardV2'));
 const Rundown = lazy(() => import('../pages/Rundown'));
 const Settings = lazy(() => import('../pages/Settings'));
+
+const VideoMetadata = lazy(() => import('../pages/VideoMetadata')); 
+const FolderItems = lazy(() => import('../pages/FolderItems')); 
+
+const AssetVideos = lazy(() => import('../pages/AssetVideos')); 
 
 
 const Login = lazy(() => import('../pages/Login')); 
@@ -24,6 +30,12 @@ export const routes = [
     exact: true,
   },
   {
+    path: '/DAM',
+    element: DAM, //() => <Navigate to="/schedulertable" replace />,
+    name: 'DAM',
+    exact: true,
+  },
+  {
     path: '/dashboardv2',
     element: DashboardV2,
     name: 'DashboardV2',
@@ -39,6 +51,13 @@ export const routes = [
     path: '/settings',
     element: Settings,
     name: 'Settings',
+    exact: true,
+  },
+
+  {
+    path: '/metadata/:id',
+    element: VideoMetadata,
+    name: 'VideoMetadata',
     exact: true,
   },
  
@@ -62,6 +81,18 @@ export const routes = [
     name: 'SettingsScheduler',
     exact: true,
   },
+  {
+    path: '/folderitem/:id',
+    element: FolderItems,
+    name: 'FolderItems',
+    exact: true,
+  },
+  {
+    path: 'api/v1/assets/single',
+    element: AssetVideos,
+    name: 'AssetVideos',
+    exact: true,
+  },
   // Add more routes here as your app grows
 ];
 
@@ -72,7 +103,7 @@ export const ROUTES = {
   RUNDOWN: '/rundown',
   SETTINGS: '/settings',
   METADATA: '/metadata/:id',
- 
+  FOLDERITEMS: '/folderitem/:id',
   LOGIN: '/login',  
   SCHEDULERTABLE: '/schedulertable',  
   SETTINGSSCHEDULER: '/settingsscheduler',

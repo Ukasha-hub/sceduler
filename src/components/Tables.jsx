@@ -748,7 +748,7 @@ const Tables = () => {
 
   const handleExitLive = async () => {
     try {
-      const response = await fetch('http://172.16.9.98:8000/api/v1/rundown/exitlive', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const response = await fetch('http://172.16.9.98:8001/api/v1/rundown/exitlive', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
       if (response.ok) {
         setNotification({ show: true, type: 'success', message: 'Exit Live command executed successfully!' });
         setTimeout(() => setNotification({ show: false, type: '', message: '' }), 3000);

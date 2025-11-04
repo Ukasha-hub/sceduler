@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes";
 
 import Rundown from "../pages/Rundown";
@@ -10,10 +10,12 @@ import SchedulerTable from "../pages/SchedulerTable";
 import ClearSchedule from "../pages/ClearSchedule";
 import ServerSetup from "../pages/ServerSetup";
 import HourlyAdSettings from "../pages/HourlyAdSettings";
+import DAM from "../pages/DAM";
 
 function SideNav({ onOpenTab }) {
   const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const isActive = (path) => (location.pathname === path ? "active" : "");
 
@@ -193,9 +195,27 @@ function SideNav({ onOpenTab }) {
                 </li>
               </ul>
             </li>
+            
           </ul>
         </nav>
+        <ul
+            className="nav nav-pills nav-sidebar flex-column"
+            
+          >
+             <li className="nav-item">
+              <button
+                className="nav-link text-left w-100"
+                onClick={() =>  navigate(`/DAM`)}
+              >
+                <i className="nav-icon fas fa-chart-pie text-white" />
+                <p className="text-white">DAMm</p>
+              </button>
+            </li>
+          </ul>
       </div>
+      <nav className="mt-2">
+        
+        </nav>
     </aside>
   );
 }

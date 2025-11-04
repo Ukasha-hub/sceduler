@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import Header from './Header';
 import SideNav from './SideNav';
 import Footer from './Footer';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const MainLayout = ({ children }) => {
 
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(null);
-
+  const navigate = useNavigate();
+  const location = useLocation();
   useEffect(() => {
     if (window.innerWidth >= 1024) {
       document.body.classList.remove('sidebar-collapse'); // Force open
@@ -22,6 +24,9 @@ const MainLayout = ({ children }) => {
       return prev;
     });
     setActiveTab(key);
+    if (location.pathname.startsWith("/DAM") && key !== "dam") {
+      navigate("/"); // or navigate to the base route you want
+    }
   };
 
   return (

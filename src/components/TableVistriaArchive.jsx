@@ -194,7 +194,7 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
                 <th className="px-2 py-2 max-w-[150px]  whitespace-normal break-words">Name</th>
                 <th className="px-2 py-2 max-w-[100px] whitespace-normal break-words">Asset ID</th>
                 <th className="px-2 py-2 max-w-[50px] whitespace-normal break-words">Duration</th>
-                <th className="px-2 py-2 max-w-[100px] whitespace-normal break-words">Size</th>
+                <th className="px-2 py-2 max-w-[100px] whitespace-normal break-words">Size(GB)</th>
               </tr>
             </thead>
             <tbody>

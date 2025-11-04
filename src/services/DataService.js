@@ -2,7 +2,7 @@
 export class DataService {
     constructor() {
         // Third server API configuration
-        this.thirdServerAPI = 'http://172.16.9.98:8000/api/v1/rundown/server3/today';
+        this.thirdServerAPI = 'http://172.16.9.98:8001/api/v1/rundown/server3/today';
         
         // Extended sample data
         this.data = [

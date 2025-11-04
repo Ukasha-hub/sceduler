@@ -81,7 +81,7 @@ function Rundown() {
   // Fetch health status for third server
   const fetchThirdServerHealth = async () => {
     try {
-      const response = await fetch('http://172.16.9.98:8000/api/v1/health/server3/health');
+      const response = await fetch('http://172.16.9.98:8001/api/v1/health/server3/health');
       if (response.ok) {
         const healthData = await response.json();
         setHealthStatus(prev => ({
@@ -201,7 +201,7 @@ function Rundown() {
   // Handle Exit Live action
   const handleExitLive = async () => {
     try {
-      const response = await fetch('http://172.16.9.98:8000/api/v1/rundown/exitlive', {
+      const response = await fetch('http://172.16.9.98:8001/api/v1/rundown/exitlive', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

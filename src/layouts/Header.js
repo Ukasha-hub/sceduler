@@ -1,5 +1,42 @@
 import React, {  } from "react";
+import axios from "axios";
+import { useContext, useRef, useState } from "react";
+import { SearchContext } from "../context/SearchContext";
+import API from "../API";
 function Header({ onToggleSidebar}) {
+  const { query, handleQueryChange, handleSearchResults } = useContext(SearchContext);
+
+  const typingTimer = useRef(null);
+
+
+
+  const performSearch = async (searchText) => {
+    try {
+      // Fetch all videos from API
+      const res = await API.get("/api/v1/videos");
+      const videos = res.data.videos || [];
+  
+      // Filter videos by file_name matching the search text (case-insensitive)
+      const filtered = videos.filter(video =>
+        video.file_name.toLowerCase().includes(searchText.toLowerCase())
+      );
+  
+      // Update search results
+      handleSearchResults(filtered);
+      console.log("Filtered results:", filtered);
+    } catch (err) {
+      console.error("Search failed:", err);
+      handleSearchResults([]); // Reset on error
+    }
+  };
+  
+  const handleKeyUp = (e) => {
+    handleQueryChange(e.target.value); 
+    clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => {
+      performSearch(query);
+    }, 400);
+  };
   return (
     <div>
     
@@ -15,25 +52,37 @@ function Header({ onToggleSidebar}) {
   <ul className="navbar-nav ml-auto">
     {/* Navbar Search */}
     <li className="nav-item">
-      <a className="nav-link" data-widget="navbar-search" href="#" role="button">
-        <i className="fas fa-search" />
-      </a>
-      <div className="navbar-search-block">
-        <form className="form-inline">
-          <div className="input-group input-group-sm">
-            <input className="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search" />
-            <div className="input-group-append">
-              <button className="btn btn-navbar" type="submit">
-                <i className="fas fa-search" />
-              </button>
-              <button className="btn btn-navbar" type="button" data-widget="navbar-search">
-                <i className="fas fa-times" />
-              </button>
+            <a className="nav-link" data-widget="navbar-search" href="#" role="button">
+              <i className="fas fa-search" />
+            </a>
+            <div className="navbar-search-block">
+              <form className="form-inline" >
+                <div className="input-group input-group-sm">
+                <input
+          className="form-control form-control-navbar"
+          type="search"
+          placeholder="Search"
+          value={query}
+          onChange={(e) => handleQueryChange(e.target.value)}
+          onKeyUp={handleKeyUp}
+        />
+                  <div className="input-group-append">
+                    <button className="btn btn-navbar" type="submit" >
+                      <i className="fas fa-search" />
+                    </button>
+                    <button
+                      className="btn btn-navbar"
+                      type="button"
+                      data-widget="navbar-search"
+                     
+                    >
+                      <i className="fas fa-times" />
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
-          </div>
-        </form>
-      </div>
-    </li>
+          </li>
     {/* Messages Dropdown Menu */}
     <li className="nav-item dropdown">
      
