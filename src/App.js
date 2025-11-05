@@ -5,13 +5,16 @@ import './App.css';
 import MainLayout from './layouts/MainLayout';
 import AppRoutes from './routes/AppRoutes';
 import { SearchProvider } from './context/SearchContext';
+import { HourlyAdProvider } from './context/HourlyAdProvider';
 
 function App() {
   return (
     <SearchProvider>
-    <MainLayout>
-      <AppRoutes />
-    </MainLayout>
+      <HourlyAdProvider>  
+        <MainLayout>
+          <AppRoutes />
+        </MainLayout>
+      </HourlyAdProvider>
     </SearchProvider>
   );
 }

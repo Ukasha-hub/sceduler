@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import TableMeta from '../components/TableMeta';
 import TableVistriaArchive from '../components/TableVistriaArchive';
 import tableData from '../services/TableData';
@@ -10,6 +10,7 @@ import 'jspdf-autotable';
 import autoTable from "jspdf-autotable"; 
 import { FaFileCsv } from "react-icons/fa6";
 import { FaFilePdf } from "react-icons/fa6";
+import { HourlyAdContext } from '../context/HourlyAdProvider';
 
 const Tables = () => {
   const [metaData, setMetaData] = useState([]);
@@ -1151,6 +1152,27 @@ const getToday = () => {
   return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
 };
 
+const { hourlyInterval } = useContext(HourlyAdContext);
+
+const generateSlots = (interval) => {
+  const slots = [];
+  const totalMinutes = 24 * 60;
+
+  for (let start = 0; start < totalMinutes; start += interval) {
+    const end = Math.min(start + interval - 1, totalMinutes - 1);
+
+    const startH = String(Math.floor(start / 60)).padStart(2, "0");
+    const startM = String(start % 60).padStart(2, "0");
+
+    const endH = String(Math.floor(end / 60)).padStart(2, "0");
+    const endM = String(end % 60).padStart(2, "0");
+
+    slots.push(`${startH}:${startM} - ${endH}:${endM}`);
+  }
+
+  return slots;
+};
+
 //console.log("metadata:",metaData)
   return (
     <div>
@@ -1186,12 +1208,14 @@ const getToday = () => {
       Hourly Ad
     </label>
     <div className="col-sm-8 pl-1">
-      <select className="form-control form-control-sm">
-        <option value="">Select Ad</option>
-        <option value="ad1">Ad 1</option>
-        <option value="ad2">Ad 2</option>
-        <option value="ad3">Ad 3</option>
-      </select>
+    <select className="form-control form-control-sm">
+          <option value="">Select Ad</option>
+          {generateSlots(hourlyInterval).map((slot, idx) => (
+            <option key={idx} value={slot}>
+              {slot}
+            </option>
+          ))}
+        </select>
     </div>
   </div>
 
