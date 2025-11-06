@@ -1,7 +1,9 @@
 import { lazy } from 'react';
 import { Navigate } from 'react-router-dom';
-
+import ProtectedRoute from "./ProtectedRoute";
 // ✅ Lazy load components for better performance
+
+const Landing = lazy(() => import('../pages/Landing'));
 const Home = lazy(() => import('../pages/Home'));
 const DAM = lazy(() => import('../pages/DAM'));
 const DashboardV2 = lazy(() => import('../pages/DashboardV2'));
@@ -25,49 +27,55 @@ const SettingsScheduler = lazy(() => import('../pages/SettingsScheduler'));
 export const routes = [
   {
     path: '/',
-    element: Home, //() => <Navigate to="/schedulertable" replace />,
-    name: 'Home',
-    exact: true,
+    element: Landing,
+    name: 'Landing',
   },
-  {
-    path: '/DAM',
-    element: DAM, //() => <Navigate to="/schedulertable" replace />,
-    name: 'DAM',
-    exact: true,
-  },
-  {
-    path: '/dashboardv2',
-    element: DashboardV2,
-    name: 'DashboardV2',
-    exact: true,
-  },
-  {
-    path: '/rundown',
-    element: Rundown,
-    name: 'Rundown',
-    exact: true,
-  },
-  {
-    path: '/settings',
-    element: Settings,
-    name: 'Settings',
-    exact: true,
-  },
-
-  {
-    path: '/metadata/:id',
-    element: VideoMetadata,
-    name: 'VideoMetadata',
-    exact: true,
-  },
- 
- 
   {
     path: '/login', // Add a new route for the login page
     element: Login,
     name: 'Login',
     exact: true,
   },
+  {
+    path: '/Home',
+    element:Home, //() => <ProtectedRoute element={Home} />, 
+    name: 'Home',
+    exact: true,
+  },
+  {
+    path: '/DAM',
+    element: () => <ProtectedRoute element={DAM} />, 
+    name: 'DAM',
+    exact: true,
+  },
+  {
+    path: '/dashboardv2',
+    element:  () => <ProtectedRoute element={DashboardV2} />,
+    name: 'DashboardV2',
+    exact: true,
+  },
+  {
+    path: '/rundown',
+    element:Rundown, //() => <ProtectedRoute element={Rundown} />,
+    name: 'Rundown',
+    exact: true,
+  },
+  {
+    path: '/settings',
+    element:Settings, // () => <ProtectedRoute element={Settings} />,
+    name: 'Settings',
+    exact: true,
+  },
+
+  {
+    path: '/metadata/:id',
+    element: () => <ProtectedRoute element={VideoMetadata} />,
+    name: 'VideoMetadata',
+    exact: true,
+  },
+ 
+ 
+  
   
   {
     path: '/schedulertable', // Add a new route for the login page
@@ -98,7 +106,8 @@ export const routes = [
 
 // ✅ Route paths as constants to avoid typos
 export const ROUTES = {
-  HOME: '/',
+  LANDING: '/',
+  HOME: '/Home',
   DASHBOARDV2: '/dashboardv2',
   RUNDOWN: '/rundown',
   SETTINGS: '/settings',

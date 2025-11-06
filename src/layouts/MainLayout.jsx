@@ -6,10 +6,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const MainLayout = ({ children }) => {
 
+  const location = useLocation();    // ✅ detect current route
+
+  const noLayoutRoutes = ["/", "/login"];  
+  // Add more pages in this array if you want to hide the layout on them
+
+  
+
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation();
+ 
   useEffect(() => {
     if (window.innerWidth >= 1024) {
       document.body.classList.remove('sidebar-collapse'); // Force open
@@ -28,6 +35,11 @@ const MainLayout = ({ children }) => {
       navigate("/"); // or navigate to the base route you want
     }
   };
+
+  // If current route SHOULD NOT show layout, just return children directly
+  if (noLayoutRoutes.includes(location.pathname)) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="wrapper ">
