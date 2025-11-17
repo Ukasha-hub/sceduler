@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import cardData from "../services/CardData";
+import cardData from "../../services/CardData";
 import { useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import axios from "axios";
@@ -42,7 +42,7 @@ const useFileFolderManager = () =>{
     // Replace with your API endpoint
     const fetchVideos = async () => {
       try {
-        const response = await axios.get("http://172.16.9.98:8001/api/v1/videos");
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/videos`);
         setVideos(response.data.videos); // assuming response.data has the same structure
       } catch (err) {
         console.error("Error fetching videos:", err);

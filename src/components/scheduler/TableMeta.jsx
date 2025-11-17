@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import UpdateSchedulerModal from "./Modal/UpdateSchedulerModal";
+import UpdateSchedulerModal from "../Modal/scheduler/UpdateSchedulerModal";
 import { ToastContainer, toast } from 'react-toastify';
-import AddDataModal from "./Modal/AddDataModal";
-import AddNewRowModal from "./Modal/AddNewRowModal";
+import AddDataModal from "../Modal/scheduler/AddDataModal";
+import AddNewRowModal from "../Modal/scheduler/AddNewRowModal";
 
 const TableMeta = ( {data, onMoveRow, from, 
   columns, 

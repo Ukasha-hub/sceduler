@@ -1,7 +1,7 @@
 import React, {  } from "react";
 import axios from "axios";
 import { useContext, useRef, useState } from "react";
-import { SearchContext } from "../context/SearchContext";
+import { SearchContext } from "../context/dam/SearchContext";
 import API from "../API";
 function Header({ onToggleSidebar}) {
   const { query, handleQueryChange, handleSearchResults } = useContext(SearchContext);

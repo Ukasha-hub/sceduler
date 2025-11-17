@@ -9,12 +9,12 @@ setLoadingAPI(true);
     for (let i = 0; i < videos.length; i += batchSize) { 
         const batch = videos.slice(i, i + batchSize); 
         const batchResults = await Promise.all( batch.map(async (video) => { 
-            try { const res = await fetch(/api/v1/metadata/${video.id}); 
+            try { const res = await fetch(`/api/v1/metadata/${video.id}`); 
             const meta = await res.json(); 
             const d = meta?.data || {}; 
             return { ...video, duration: d.timecode || "-", duration_seconds: d.duration_seconds || 0, fps: d.fps || "-", codec: d.codec || "-", width: d.width || "-", height: d.height || "-", bitrate: d.bitrate || "-", file_url: d.file_url || "#", }; 
         } catch (err) { 
-            console.error(Metadata fetch failed for ${video.id}:, err); 
+            console.error(`Metadata fetch failed for ${video.id}:`, err); 
             return video; 
         } }) ); 
         results.push(...batchResults); 

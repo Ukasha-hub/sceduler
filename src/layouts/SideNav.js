@@ -3,14 +3,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../routes";
 
 import Rundown from "../pages/Rundown";
-import { SettingsScheduler } from "../pages/SettingsScheduler";
-import { SlugSetup } from "../pages/SlugSetup";
-import FilterSetup from "../pages/FilterSetup";
-import SchedulerTable from "../pages/SchedulerTable";
-import ClearSchedule from "../pages/ClearSchedule";
-import ServerSetup from "../pages/ServerSetup";
-import HourlyAdSettings from "../pages/HourlyAdSettings";
-import DAM from "../pages/DAM";
+import { SettingsScheduler } from "../pages/scheduler/SettingsScheduler";
+import { SlugSetup } from "../pages/scheduler/SlugSetup";
+import FilterSetup from "../pages/scheduler/FilterSetup";
+import SchedulerTable from "../pages/scheduler/SchedulerTable";
+import ClearSchedule from "../pages/scheduler/ClearSchedule";
+import ServerSetup from "../pages/scheduler/ServerSetup";
+import HourlyAdSettings from "../pages/scheduler/HourlyAdSettings";
+import DAM from "../pages/dam/DAM";
 import { CalendarIcon, Cog6ToothIcon, Squares2X2Icon, FilterIcon, TrashIcon, ServerIcon, ClockIcon, ListBulletIcon } from "@heroicons/react/24/outline";
 
 function SideNav({ onOpenTab }) {

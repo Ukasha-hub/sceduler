@@ -21,7 +21,7 @@ const FileCard = ({ item, onRightClick, onSelect, isSelected, onDrop }) => {
 
   // Handle double click
   const handleDoubleClick = () => {
-    navigate(`/api/v1/assets/single?asset_id=${item.asset_id}`);
+    navigate(`${process.env.REACT_APP_API_URL}/api/v1/assets/single?asset_id=${item.asset_id}`);
   };
 
   return (

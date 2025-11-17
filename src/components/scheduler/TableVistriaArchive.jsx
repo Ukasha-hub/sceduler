@@ -102,7 +102,7 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
     const handleDownload = (row) => {
       console.log("Downloading:", row);
       // Example download logic:
-      // window.open(`/api/v1/media/download/${row.id}`, "_blank");
+      // window.open(`${process.env.REACT_APP_API_URL}/api/v1/media/download/${row.id}`, "_blank");
     
       setContextMenu({ ...contextMenu, visible: false });
     };

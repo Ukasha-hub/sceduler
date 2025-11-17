@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom';
 
-import useFileFolderManager from '../hooks/useFileFolderManager';
+import useFileFolderManager from '../../hooks/dam/useFileFolderManager';
 
 
 function VideoMetadata() {

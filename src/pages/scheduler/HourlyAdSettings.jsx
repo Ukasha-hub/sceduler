@@ -1,6 +1,6 @@
 // HourlyAdSettings.jsx
 import React, { useContext } from "react";
-import { HourlyAdContext } from "../context/HourlyAdProvider";
+import { HourlyAdContext } from "../../context/scheduler/HourlyAdProvider";
 
 
 const HourlyAdSettings = () => {

@@ -1,9 +1,9 @@
 import React from 'react'
-import useFileFolderManager from '../hooks/useFileFolderManager';
+import useFileFolderManager from '../../hooks/dam/useFileFolderManager';
 import Breadcrumb from './Breadcrumb';
 import PaginationComponent from './PaginationComponent';
 import { useNavigate } from "react-router-dom";
-import AddFileModal from './Modal/AddFileModal';
+import AddFileModal from '../Modal/dam/AddFileModal';
 import { FaArrowLeft } from "react-icons/fa";
 import { IoReturnUpBackOutline } from "react-icons/io5";
 

@@ -246,7 +246,7 @@ const UpdateSchedulerModal = ({
             <button className="btn btn-secondary btn-sm" onClick={onClose}>
               Cancel
             </button>
-            <button className="btn btn-success btn-sm" onClick={onConfirm}>
+            <button className="btn btn-success btn-sm" onClick={() => onConfirm(formInputs)}>
               Update
             </button>
           </div>

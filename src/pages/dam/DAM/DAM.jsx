@@ -1,28 +1,28 @@
 import React, { useContext, useEffect, useMemo } from 'react';
-import FolderCard from '../../components/FolderCard'
+import FolderCard from '../../../components/dam/FolderCard'
 
 
-import MoveFileFolderModal from '../../components/Modal/MoveFileFolderModal'
+import MoveFileFolderModal from '../../../components/Modal/dam/MoveFileFolderModal'
 
-import DeleteFileFolderModal from '../../components/Modal/DeleteFileFolderModal'
-import useFileFolderManager from '../../hooks/useFileFolderManager'
+import DeleteFileFolderModal from '../../../components/Modal/dam/DeleteFileFolderModal'
+import useFileFolderManager from '../../../hooks/dam/useFileFolderManager'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 
 
-import RenameFolderModal from '../../components/Modal/RenameFolderModal'
+import RenameFolderModal from '../../../components/Modal/dam/RenameFolderModal'
 import { useState } from 'react'
-import TopbarInsideTabs from '../../components/TopbarInsideTabs'
-import Breadcrumb from '../../components/Breadcrumb';
-import Tabs from '../../components/Tabs';
-import PageHeader from '../../components/PageHeader';
-import AddFileModal from '../../components/Modal/AddFileModal';
-import ContextMenu from '../../components/ContextMenu';
+import TopbarInsideTabs from '../../../components/dam/TopbarInsideTabs'
+import Breadcrumb from '../../../components/dam/Breadcrumb';
+import Tabs from '../../../components/dam/Tabs';
+import PageHeader from '../../../components/dam/PageHeader';
+import AddFileModal from '../../../components/Modal/dam/AddFileModal';
+import ContextMenu from '../../../components/dam/ContextMenu';
 import axios from 'axios';
-import FileCard from '../../components/FileCard';
-import MainLayout from '../../layouts/MainLayout';
-import { SearchContext } from '../../context/SearchContext';
-import API from '../../API';
+import FileCard from '../../../components/dam/FileCard';
+import MainLayout from '../../../layouts/MainLayout';
+import { SearchContext } from '../../../context/dam/SearchContext';
+import API from '../../../API';
 
 
 
@@ -232,7 +232,7 @@ const [showRenameModal, setShowRenameModal] = useState(false);
         // OPTION 1: If you have a DELETE API, uncomment this block:
        // try {
         //  for (const id of idsToDelete) {
-         //   await axios.delete(`http://172.16.9.98:8001/api/v1/videos/${id}`);
+         //   await axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/videos/${id}`);
          // }
       //  } catch (error) {
     //      console.error("Error deleting from server:", error);

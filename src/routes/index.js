@@ -5,20 +5,20 @@ import ProtectedRoute from "./ProtectedRoute";
 
 const Landing = lazy(() => import('../pages/Landing'));
 const Home = lazy(() => import('../pages/Home'));
-const DAM = lazy(() => import('../pages/DAM'));
+const DAM = lazy(() => import('../pages/dam/DAM'));
 const DashboardV2 = lazy(() => import('../pages/DashboardV2'));
 const Rundown = lazy(() => import('../pages/Rundown'));
 const Settings = lazy(() => import('../pages/Settings'));
 
-const VideoMetadata = lazy(() => import('../pages/VideoMetadata')); 
-const FolderItems = lazy(() => import('../pages/FolderItems')); 
+const VideoMetadata = lazy(() => import('../pages/dam/VideoMetadata')); 
+const FolderItems = lazy(() => import('../pages/dam/FolderItems')); 
 
-const AssetVideos = lazy(() => import('../pages/AssetVideos')); 
+const AssetVideos = lazy(() => import('../pages/dam/AssetVideos')); 
 
 
 const Login = lazy(() => import('../pages/Login')); 
-const SchedulerTable = lazy(() => import('../pages/SchedulerTable')); 
-const SettingsScheduler = lazy(() => import('../pages/SettingsScheduler')); 
+const SchedulerTable = lazy(() => import('../pages/scheduler/SchedulerTable')); 
+const SettingsScheduler = lazy(() => import('../pages/scheduler/SettingsScheduler')); 
 
 
 

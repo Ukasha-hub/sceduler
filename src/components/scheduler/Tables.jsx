@@ -1,16 +1,16 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import TableMeta from '../components/TableMeta';
-import TableVistriaArchive from '../components/TableVistriaArchive';
-import tableData from '../services/TableData';
+import TableMeta from './TableMeta';
+import TableVistriaArchive from './TableVistriaArchive';
+import tableData from '../../services/TableData';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import AddDataModal from './Modal/AddDataModal';
+import AddDataModal from '../Modal/scheduler/AddDataModal';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import autoTable from "jspdf-autotable"; 
 import { FaFileCsv } from "react-icons/fa6";
 import { FaFilePdf } from "react-icons/fa6";
-import { HourlyAdContext } from '../context/HourlyAdProvider';
+import { HourlyAdContext } from '../../context/scheduler/HourlyAdProvider';
 
 const Tables = () => {
   const [metaData, setMetaData] = useState([]);
@@ -39,7 +39,7 @@ const Tables = () => {
   
     // --- Real API call (commented out for now) ---
     /*
-    fetch("/api/v1/media/?alias=Razuna")
+    fetch(`${process.env.REACT_APP_API_URL}/api/v1/media/?alias=Razuna`)
       .then((res) => res.json())
       .then(async (responseData) => {
         const formatted = responseData.data.map((item) => ({
@@ -669,7 +669,7 @@ const Tables = () => {
           batch.map(async (video) => {
             try {
               // --- Real API fetch preserved ---
-              // const res = await fetch(`/api/v1/metadata/${video.id}`);
+              // const res = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/metadata/${video.id}`);
               // const meta = await res.json();
   
               // --- Mock metadata response ---

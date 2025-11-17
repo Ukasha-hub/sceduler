@@ -1,22 +1,22 @@
 
 import React, { useEffect, useState } from 'react'
 import {  useParams } from 'react-router-dom';
-import FolderCard from '../components/FolderCard';
-import MoveFileFolderModal from '../components/Modal/MoveFileFolderModal';
+import FolderCard from '../../components/dam/FolderCard';
+import MoveFileFolderModal from '../../components/Modal/dam/MoveFileFolderModal';
 
-import DeleteFileFolderModal from '../components/Modal/DeleteFileFolderModal';
+import DeleteFileFolderModal from '../../components/Modal/dam/DeleteFileFolderModal';
 
-import useFileFolderManager from '../hooks/useFileFolderManager';
+import useFileFolderManager from '../../hooks/dam/useFileFolderManager';
 import { Link, useLocation } from 'react-router-dom'
 
-import PaginationComponent from '../components/PaginationComponent';
-import Breadcrumb from '../components/Breadcrumb';
-import RenameFolderModal from '../components/Modal/RenameFolderModal';
-import TopbarInsideTabs from '../components/TopbarInsideTabs';
-import Tabs from '../components/Tabs';
-import PageHeader from '../components/PageHeader';
-import AddFileModal from '../components/Modal/AddFileModal';
-import ContextMenu from '../components/ContextMenu';
+import PaginationComponent from '../../components/dam/PaginationComponent';
+import Breadcrumb from '../../components/dam/Breadcrumb';
+import RenameFolderModal from '../../components/Modal/dam/RenameFolderModal';
+import TopbarInsideTabs from '../../components/dam/TopbarInsideTabs';
+import Tabs from '../../components/dam/Tabs';
+import PageHeader from '../../components/dam/PageHeader';
+import AddFileModal from '../../components/Modal/dam/AddFileModal';
+import ContextMenu from '../../components/dam/ContextMenu';
 
 
 const FolderItems = () => {

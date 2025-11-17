@@ -1,5 +1,5 @@
 import React from 'react'
-import Tables from '../components/Tables'
+import Tables from '../../components/scheduler/Tables'
 
 const SchedulerTable = () => {
   return (

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom';
-import cardData from '../services/CardData';
+import cardData from '../../services/CardData.jsx';
 import { FaHome } from "react-icons/fa";
 import { FaFolder } from "react-icons/fa";
 import { IoIosArrowForward } from "react-icons/io";

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import tableData from "../services/TableData";
+import tableData from "../../services/TableData";
 import TimePicker from "react-time-picker";
 import 'react-time-picker/dist/TimePicker.css';
 import 'react-clock/dist/Clock.css';
