@@ -158,7 +158,7 @@ export default function Landing() {
       </div>
 
       {/* ⭐ CONTACT SECTION */}
-<div className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16 mt-20">
+<div className="w-full bg-gradient-to-r  from-gray-600 to-gray-800 text-white py-16 mt-20">
   <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
 
     {/* LEFT SIDE - TEXT */}
@@ -206,7 +206,7 @@ export default function Landing() {
   </div>
 </div>
 
-      <div className="h-16"></div>
+      
 
       {/* 🔥 MODAL */}
       {modalData && (

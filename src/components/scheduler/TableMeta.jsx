@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import UpdateSchedulerModal from "../Modal/scheduler/UpdateSchedulerModal";
 import { ToastContainer, toast } from 'react-toastify';
-import AddDataModal from "../Modal/scheduler/AddDataModal";
+
 import AddNewRowModal from "../Modal/scheduler/AddNewRowModal";
 
 const TableMeta = ( {data, onMoveRow, from, 
@@ -46,6 +46,15 @@ const [showUpdate, setShowUpdate] = useState(false);
 const [selectedRows, setSelectedRows] = useState([]);
 const [clipboard, setClipboard] = useState(null);
 const [showAddNewModal, setShowAddNewModal] = useState(false);
+
+const [showImportPackageModal, setShowImportPackageModal] = useState(false);
+const [availablePackages, setAvailablePackages] = useState([]);
+const [selectedPackageName, setSelectedPackageName] = useState("");
+
+useEffect(() => {
+  const stored = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
+  setAvailablePackages(stored);
+}, []);
 
 useEffect(() => {
   console.log("data changed:", data);
@@ -329,14 +338,7 @@ const handleRowSelect = (id) => {
   );
 };
 
-const handleRowRightClick = (e, row) => {
-  e.preventDefault(); // prevent default browser menu
-  setSelectedRows([row.id]); // select this row
-  setContextMenu({
-    mouseX: e.clientX + 2,
-    mouseY: e.clientY - 6
-  });
-};
+
 
 // ✅ Function to toggle all
 const handleSelectAll = () => {
@@ -405,6 +407,8 @@ const handlePaste = (insertAfterId = null, newDate = null) => {
       const idx = updated.findIndex(r => r.id === insertAfterId);
       if (idx >= 0) insertIndex = idx + 1;
     }
+
+    
 
     updated.splice(insertIndex, 0, ...newRows); // ✅ Insert here
     return recalcSchedule(updated);
@@ -543,6 +547,53 @@ setFilteredData(prev => {
   setPendingRow(null);
 };
 
+useEffect(() => {
+  if (showUpdate && selectedRow) {
+    setFormInputs({ ...selectedRow });
+  }
+}, [showUpdate, selectedRow]);
+
+const handleImportPackage = (packageName) => {
+  if (!packageName) return;
+
+  const stored = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
+  const pkg = stored.find((p) => p.name === packageName);
+  if (!pkg) return;
+
+  const insertAfterId = selectedRow?.id || null;
+
+  setMetaData(prev => {
+    const updated = [...prev];
+    let insertIndex = updated.length;
+
+    if (insertAfterId !== null) {
+      const idx = updated.findIndex(r => r.id === insertAfterId);
+      if (idx >= 0) insertIndex = idx + 1;
+    }
+
+    const newRows = pkg.items.map((item, index) => ({
+      id: item.id,
+      name: item.name,
+      type: item.type,
+      duration: item.duration,
+      startTime: "",  
+      endTime: "",
+      prevTimePeriod: { hour: 0, minute: 0, second: 0, frameRate: 0 },
+      timePeriod: { hour: 0, minute: 0, second: 0, frameRate: item.fps || 25 },
+    }));
+
+    updated.splice(insertIndex, 0, ...newRows);
+    //setFilteredData(f => {
+    //  const filtered = [...f];
+     // filtered.splice(insertIndex, 0, ...newRows);
+     // return filtered;
+   // });
+
+    return recalcSchedule ? recalcSchedule(updated) : updated;
+  });
+
+  setShowImportPackageModal(false);
+};
 
 
   
@@ -749,6 +800,18 @@ setFilteredData(prev => {
     >
       Add File
     </button>
+    <button
+  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+  onClick={() => {
+    const stored = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
+    setAvailablePackages(stored);
+    setSelectedPackageName("");
+    setShowImportPackageModal(true);
+    setContextMenu(null);
+  }}
+>
+  Import Package
+</button>
 
     {/* Copy / Paste / Delete only if there are selected rows */}
     {selectedRows.length > 0 && (
@@ -818,12 +881,22 @@ setFilteredData(prev => {
     setFormInputs={setFormInputs}
     onClose={() => setShowUpdate(false)}
     onConfirm={(updatedData) => {
-      //console.log("Updated data:", updatedData);
+      setMetaData(prev => {
+        const updated = prev.map(row =>
+          row.id === selectedRow.id ? { ...row, ...updatedData } : row
+        );
+        setFilteredData(updated); // update filtered view too
+        return updated;
+      });
+    
+      // Merge updates with existing selectedRow
+      setSelectedRow(prev => ({ ...prev, ...updatedData }));
+    
       setShowUpdate(false);
     }}
   />
 )}
-
+{console.log("formInputs after update:", formInputs)}
 <AddNewRowModal
   show={showAddNewModal}
   onClose={() => setShowAddNewModal(false)}
@@ -832,6 +905,40 @@ setFilteredData(prev => {
   setFormInputs={setFormInputs}
   pendingRow={pendingRow}
 />
+{showImportPackageModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+    <div className="bg-white p-5 rounded shadow-lg w-80">
+      <h3 className="text-lg font-semibold mb-3">Import Package</h3>
+
+      <select
+        className="form-control mb-4"
+        value={selectedPackageName}
+        onChange={(e) => setSelectedPackageName(e.target.value)}
+      >
+        <option value="">Select a package</option>
+        {availablePackages.map((p, idx) => (
+          <option key={idx} value={p.name}>{p.name}</option>
+        ))}
+      </select>
+
+      <div className="flex justify-end gap-2">
+        <button
+          className="px-3 py-1 bg-gray-300 rounded"
+          onClick={() => setShowImportPackageModal(false)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="px-3 py-1 bg-blue-600 text-white rounded"
+          onClick={async () => handleImportPackage(selectedPackageName)}
+        >
+          Import
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
 
 

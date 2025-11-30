@@ -72,8 +72,8 @@ export const SlugSetup = () => {
             <h3 className="card-title">DataTable with multiple select</h3>
           </div>
 
-          <div className="card-body">
-            <table className="table table-bordered table-hover min-w-[600px]">
+          <div className="table-responsive ">
+            <table className="table table-collapse table-hover w-full">
               <thead>
                 <tr>
                   <th>
@@ -83,9 +83,9 @@ export const SlugSetup = () => {
                       onChange={handleSelectAll}
                     />
                   </th>
-                  <th>Programee Code</th>
-                  <th>Slug Name</th>
-                  <th>Slug Name Repeat</th>
+                  <th className="border-b p-2 text-left">Programee Code</th>
+                  <th className="border-b p-2 text-left">Slug Name</th>
+                  <th className="border-b p-2 text-left">Slug Name Repeat</th>
                 
                 </tr>
               </thead>
@@ -105,9 +105,9 @@ export const SlugSetup = () => {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    <td>{row.engine}</td>
-                    <td>{row.browser}</td>
-                    <td>{row.platform}</td>
+                    <td className="border-t p-2">{row.engine}</td>
+                    <td className="border-t p-2">{row.browser}</td>
+                    <td className="border-t p-2">{row.platform}</td>
                   
                   </tr>
                 ))}
@@ -142,31 +142,97 @@ export const SlugSetup = () => {
       </div>
 
       {/* FORM SECTION */}
-      <div className="card card-primary  w-full lg:w-1/3 self-start">
-        <div className="card-header">
-          <h3 className="card-title text-white">Slug Name Input Form</h3>
-        </div>
-        <form className="">
-          <div className="card-body">
-            <div className="form-group mb-2">
-              <label>Programee Code</label>
-              <input type="text" className="form-control form-control-sm" placeholder="Enter code" />
-            </div>
-            <div className="form-group mb-2">
-              <label>Slug Name</label>
-              <input type="text" className="form-control form-control-sm" placeholder="Slug name" />
-            </div>
-            <div className="form-group mb-2">
-              <label>Slug Name Repeat</label>
-              <input type="text" className="form-control form-control-sm" placeholder="Repeat slug name" />
-            </div>
-          </div>
-          <div className="card-footer flex flex-row justify-between gap-3 ">
-            <button type="button" className="btn btn-outline-primary flex-1">Edit</button>
-            <button type="button" className="btn btn-outline-primary flex-1">Save</button>
-          </div>
-        </form>
+     {/* FORM SECTION */}
+<div className="card card-primary w-full lg:w-1/3 self-start">
+  <div className="card-header">
+    <h3 className="card-title text-white">Slug Name Input Form</h3>
+  </div>
+
+  <form>
+    <div className="card-body">
+
+      {/* Programee Code */}
+      <div className="mb-4 relative">
+        <input
+          type="text"
+          placeholder=" "
+          className="
+            peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
+            focus:border-blue-500 focus:outline-none
+          "
+        />
+        <label
+          className="
+            absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+            bg-white px-1 text-gray-500 transition-all duration-200
+            peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+            peer-placeholder-shown:scale-100
+            peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+          "
+        >
+          Programee Code
+        </label>
       </div>
+
+      {/* Slug Name */}
+      <div className="mb-4 relative">
+        <input
+          type="text"
+          placeholder=" "
+          className="
+            peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
+            focus:border-blue-500 focus:outline-none
+          "
+        />
+        <label
+          className="
+            absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+            bg-white px-1 text-gray-500 transition-all duration-200
+            peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+            peer-placeholder-shown:scale-100
+            peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+          "
+        >
+          Slug Name
+        </label>
+      </div>
+
+      {/* Slug Name Repeat */}
+      <div className="mb-4 relative">
+        <input
+          type="text"
+          placeholder=" "
+          className="
+            peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
+            focus:border-blue-500 focus:outline-none
+          "
+        />
+        <label
+          className="
+            absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+            bg-white px-1 text-gray-500 transition-all duration-200
+            peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+            peer-placeholder-shown:scale-100
+            peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+          "
+        >
+          Slug Name Repeat
+        </label>
+      </div>
+
+    </div>
+
+    <div className="card-footer flex flex-row justify-between gap-3 ">
+      <button type="button" className=" h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1 ">
+        Edit
+      </button>
+      <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1">
+        Save
+      </button>
+    </div>
+  </form>
+</div>
+
     </div>
   );
 };

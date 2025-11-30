@@ -10,10 +10,14 @@ const initialTableData = [
     { id: 7, engine: "Other browsers", browser: "All others",  },
   ];
 
+
+
 const FilterSetup = () => {
-    const [tableData, setTableData] = useState(initialTableData);
+    const [tableData, setTableData] = useState([]);
       const [selectedRows, setSelectedRows] = useState([]);
       const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rowId: null });
+      const [type, setType] = useState("");
+const [color, setColor] = useState("#000000");
     
       const tableRef = useRef();
     
@@ -56,12 +60,54 @@ const FilterSetup = () => {
       };
     
       // Delete selected rows
-      const handleDeleteRows = () => {
-        setTableData(tableData.filter((row) => !selectedRows.includes(row.id)));
+      const handleDeleteRows = async () => {
+        await Promise.all(selectedRows.map(id =>
+          fetch(`http://localhost:8080/api/v1/filters/${id}`, { method: "DELETE" })
+        ));
         setSelectedRows([]);
-        setContextMenu({ ...contextMenu, visible: false });
-        alert("Selected row(s) deleted!");
+        loadTableData(); // Refresh table
       };
+
+      const loadTableData = async () => {
+        try {
+          const res = await fetch("http://127.0.0.1:8080/api/v1/filters");
+          const data = await res.json();
+          setTableData(data);
+        } catch (err) {
+          console.error("Failed to load filters:", err);
+        }
+      };
+      
+      useEffect(() => {
+        loadTableData();
+      }, []);
+
+      const handleSave = async () => {
+        if (!type) return alert("Type is required");
+      
+        const payload = { type, color };
+        try {
+          const res = await fetch("http://127.0.0.1:8080/api/v1/filters", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+      
+          if (!res.ok) throw new Error("Failed to save filter");
+      
+          // Clear inputs
+          setType("");
+          setColor("#000000");
+      
+          // Reload table
+          loadTableData();
+        } catch (err) {
+          console.error(err);
+          alert("Error saving filter");
+        }
+      };
+
+      
   return (
     <div className="flex lg:flex-row flex-col mt-2 text-xs gap-4">
         <div className="w-full lg:w-2/3 overflow-x-auto" ref={tableRef}>
@@ -70,8 +116,8 @@ const FilterSetup = () => {
             <h3 className="card-title">DataTable with multiple select</h3>
           </div>
 
-          <div className="card-body">
-            <table className="table table-bordered table-hover min-w-[600px]">
+          <div className="table-responsive">
+            <table className="table table-collapse table-hover min-w-[600px]">
               <thead>
                 <tr>
                   <th>
@@ -81,8 +127,8 @@ const FilterSetup = () => {
                       onChange={handleSelectAll}
                     />
                   </th>
-                  <th>Type</th>
-                  <th>Color</th>
+                  <th className="border-b p-2 text-left">Type</th>
+                  <th className="border-b p-2 text-left">Color</th>
                  
                 </tr>
               </thead>
@@ -102,8 +148,10 @@ const FilterSetup = () => {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    <td>{row.engine}</td>
-                    <td>{row.browser}</td>
+                    <td className="border-t p-2">{row.type}</td>
+<td className="border-t p-2">
+  <div className="w-6 h-6 rounded" style={{ backgroundColor: row.color }}></div>
+</td>
                     
                   </tr>
                 ))}
@@ -145,34 +193,66 @@ const FilterSetup = () => {
   <form>
     <div className="card-body">
       
-      {/* Type Field (Text Input instead of Select) */}
-      <div className="form-group mb-2">
-        <label className='pr-2'>Type</label>
-        <input
-          type="text"
-          className="border rounded px-1 py-0.5 h-7 w-75 "
-          id="type"
-          placeholder="Enter Type"
-        />
-      </div>
+        {/* FLOATING INPUT — TYPE */}
+  <div className="mb-4 relative">
+    <input
+      type="text"
+      name="type"
+      placeholder=" "
+      onChange={(e) => setType(e.target.value)}
+      className="
+        peer block w-full rounded border border-gray-300 px-2 
+        pt-3 pb-1 text-xs h-8
+        focus:border-blue-500 focus:outline-none
+      "
+    />
+    <label
+      className="
+        absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+        bg-white px-1 text-gray-500 transition-all duration-200
+        peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+        peer-placeholder-shown:scale-100
+        peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+      "
+    >
+      Type
+    </label>
+  </div>
 
-      {/* New Color Picker */}
-      <div className="form-group mb-2">
-        <label className='pr-2'>Color</label>
-        <input
-          type="color"
-          className="border rounded px-1 py-0.5  md:w-32 h-8"
-          id="color"
-          defaultValue="#000000"
-        />
-      </div>
+  {/* FLOATING INPUT — COLOR PICKER */}
+  <div className="mb-4 relative">
+    <input
+      type="color"
+      name="color"
+      placeholder=" "
+      defaultValue="#000000"
+      onChange={(e) => setColor(e.target.value)}
+      className="
+        peer block w-full rounded border border-gray-300 px-2 
+        pt-3 pb-1 text-xs h-10
+        focus:border-blue-500 focus:outline-none
+      "
+    />
+    <label
+      className="
+        absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+        bg-white px-1 text-gray-500 transition-all duration-200
+        peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+        peer-placeholder-shown:scale-100
+        peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+      "
+    >
+      Color
+    </label>
+  </div>
+
 
     </div>
 
     <div className="card-footer flex flex-row justify-between gap-3 ">
            
-            <button type="button" className="btn btn-outline-primary w-10 h-10 flex-1 pb-2"> Save</button>
-            <button type="button" className="btn btn-outline-primary flex-1">Edit</button>
+            <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1 "  onClick={handleSave}> Save</button>
+            <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1">Edit</button>
           </div>
   </form>
 </div>

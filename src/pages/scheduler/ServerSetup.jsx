@@ -70,20 +70,20 @@ const ServerSetup = () => {
             <h3 className="card-title">DataTable with multiple select</h3>
           </div>
 
-          <div className="card-body">
-            <table className="table table-bordered table-hover min-w-[600px]">
+          <div className="table-responsive">
+            <table className="table table-collapse table-hover min-w-[600px]">
               <thead>
                 <tr>
-                  <th>
+                  <th className="">
                     <input
                       type="checkbox"
                       checked={selectedRows.length === tableData.length && tableData.length > 0}
                       onChange={handleSelectAll}
                     />
                   </th>
-                  <th>Server</th>
-                  <th>IP 1</th>
-                  <th>IP 2</th>
+                  <th className="border-b p-2 text-left">Server</th>
+                  <th className="border-b p-2 text-left">IP 1</th>
+                  <th className="border-b p-2 text-left">IP 2</th>
                  
                 </tr>
               </thead>
@@ -103,9 +103,9 @@ const ServerSetup = () => {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    <td>{row.engine}</td>
-                    <td>{row.browser}</td>
-                    <td>{row.platform}</td>
+                    <td className="border-t p-2">{row.engine}</td>
+                    <td className="border-t p-2">{row.browser}</td>
+                    <td className="border-t p-2">{row.platform}</td>
                    
                   </tr>
                 ))}
@@ -147,36 +147,77 @@ const ServerSetup = () => {
   <form>
     <div className="card-body">
       
-      {/* Type Field (Text Input instead of Select) */}
-      <div className="form-group mb-2">
-        <label className='pr-2'>Server</label>
-        <input
-          type="text"
-         className="border rounded px-1 py-0.5 h-7 w-75 "
-          id="type"
-          placeholder="Enter Type"
-        />
-      </div>
+      {/* Server */}
+<div className="mb-4 relative">
+  <input
+    type="text"
+    name="server"
+    placeholder=" "
+    className="
+      peer block w-full rounded border border-gray-300 px-2 px-2 pt-3 pb-1 text-xs h-8
+      focus:border-blue-500 focus:outline-none
+    "
+  />
+  <label
+    className="
+      absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+      bg-white px-1 text-gray-500 transition-all duration-200
+      peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+      peer-placeholder-shown:scale-100
+      peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+    "
+  >
+    Server
+  </label>
+</div>
 
-      <div className="form-group mb-2">
-        <label className='pr-2'>IP 1</label>
-        <input
-          type="text"
-          className="border rounded px-1 py-0.5 h-7 w-75 "
-          id="type"
-          placeholder="Enter Type"
-        />
-      </div>
+{/* IP 1 */}
+<div className="mb-4 relative">
+  <input
+    type="text"
+    name="ip1"
+    placeholder=" "
+    className="
+      peer block w-full rounded border border-gray-300 px-2 px-2 pt-3 pb-1 text-xs h-8
+      focus:border-blue-500 focus:outline-none
+    "
+  />
+  <label
+    className="
+      absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+      bg-white px-1 text-gray-500 transition-all duration-200
+      peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+      peer-placeholder-shown:scale-100
+      peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+    "
+  >
+    IP 1
+  </label>
+</div>
 
-      <div className="form-group mb-2">
-        <label className='pr-2'>IP 2</label>
-        <input
-          type="text"
-           className="border rounded px-1 py-0.5 h-7 w-75 "
-          id="type"
-          placeholder="Enter Type"
-        />
-      </div>
+{/* IP 2 */}
+<div className="mb-4 relative">
+  <input
+    type="text"
+    name="ip2"
+    placeholder=" "
+    className="
+      peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-8
+      focus:border-blue-500 focus:outline-none
+    "
+  />
+  <label
+    className="
+      absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+      bg-white px-1 text-gray-500 transition-all duration-200
+      peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+      peer-placeholder-shown:scale-100
+      peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+    "
+  >
+    IP 2
+  </label>
+</div>
 
       
       
@@ -185,8 +226,8 @@ const ServerSetup = () => {
 
     <div className="card-footer flex flex-row justify-between gap-3 ">
            
-            <button type="button" className="btn btn-outline-primary w-10 h-10 flex-1 pb-2"> Save</button>
-            <button type="button" className="btn btn-outline-primary flex-1">Edit</button>
+            <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary  flex-1 "> Save</button>
+            <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1">Edit</button>
           </div>
   </form>
 </div>

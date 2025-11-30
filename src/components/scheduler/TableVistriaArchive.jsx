@@ -10,6 +10,9 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, row: null });
   const [metadataModal, setMetadataModal] = useState({ visible: false, row: null });
 
+  const [selectedRows, setSelectedRows] = useState([]);
+const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
+
 
  
 
@@ -23,6 +26,36 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
   }, [selectedSource]);
 
  
+  const handleSavePackage = () => {
+    if (!packageModal.name.trim()) return;
+  
+    const selectedItems = filteredDataRazuna.filter(row =>
+      selectedRows.includes(row.id)
+    );
+  
+    const existingPackages = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
+    const pkgIndex = existingPackages.findIndex(p => p.name === packageModal.name.trim());
+  
+    if (pkgIndex >= 0) {
+      // Append new rows to existing package without duplicates
+      const existingIds = new Set(existingPackages[pkgIndex].items.map(i => i.id));
+      const newItems = selectedItems.filter(item => !existingIds.has(item.id));
+      existingPackages[pkgIndex].items.push(...newItems);
+    } else {
+      // Create new package
+      existingPackages.push({
+        name: packageModal.name.trim(),
+        items: selectedItems,
+        createdAt: new Date().toISOString()
+      });
+    }
+  
+    localStorage.setItem("razuna_packages", JSON.stringify(existingPackages));
+    setPackageModal({ visible: false, name: "" });
+    setSelectedRows([]);
+  };
+  
+  
 
   const handleDragStart = (e, item) => {
     e.dataTransfer.setData("rowData", JSON.stringify(item));
@@ -149,6 +182,14 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
             />
             <span>Vistria</span>
           </label>
+          <button
+    className={`px-3 py-1 text-xs rounded 
+      ${selectedRows.length > 0 ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+    disabled={selectedRows.length === 0}
+    onClick={() => setPackageModal({ visible: true, name: "" })}
+  >
+    Add Package
+  </button>
         </div>
 
         {/* Search Bar */}
@@ -182,15 +223,20 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
       {/* Table */}
       <div className="overflow-x-auto relative">
       <div className="max-h-[73vh] overflow-y-auto">
+      <div className="flex justify-end px-4 py-2">
+ 
+</div>
       {loadingAPI ? (
           <div className="flex flex-col justify-center items-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
             <p className="mt-2 text-sm text-gray-600">Loading...</p>
           </div>
         ) : (
+          
           <table className="w-full text-xs text-left text-gray-600">
             <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
               <tr>
+              <th className="px-2 py-2">Select</th>
                 <th className="px-2 py-2 max-w-[150px]  whitespace-normal break-words">Name</th>
                 <th className="px-2 py-2 max-w-[100px] whitespace-normal break-words">Asset ID</th>
                 <th className="px-2 py-2 max-w-[50px] whitespace-normal break-words">Duration</th>
@@ -213,6 +259,19 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
                     onContextMenu={(e) => handleContextMenu(e, row)}
                     className={`border-b hover:bg-gray-50 cursor-move ${getRowColor(row.type)}`}
                   >
+                     <td className="px-2 py-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(row.id)}
+                          onChange={() => {
+                            setSelectedRows(prev =>
+                              prev.includes(row.id)
+                                ? prev.filter(id => id !== row.id)
+                                : [...prev, row.id]
+                            );
+                          }}
+                        />
+                      </td>
                     <td className="px-2 py-2 text-blue-600 font-medium max-w-[150px] whitespace-normal break-words">
                       <a href="#">{row.name}</a>
                     </td>
@@ -288,6 +347,67 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
     </div>
   </div>
 )}
+
+{packageModal.visible && (
+  <div
+    className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50"
+    onClick={() => setPackageModal({ visible: false, name: "" })}
+  >
+    <div
+      className="bg-white rounded-lg p-4 w-[70vw] sm:w-[40vw]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="font-bold mb-3 text-sm">Create / Update Package</h3>
+
+      {/* Existing packages dropdown */}
+      <select
+        className="w-full border px-2 py-1 rounded text-sm mb-2"
+        value={packageModal.name}
+        onChange={(e) =>
+          setPackageModal({ ...packageModal, name: e.target.value })
+        }
+      >
+        <option value="">-- Select Existing Package --</option>
+        {JSON.parse(localStorage.getItem("razuna_packages") || "[]").map(
+          (pkg) => (
+            <option key={pkg.name} value={pkg.name}>
+              {pkg.name}
+            </option>
+          )
+        )}
+      </select>
+
+      <p className="text-xs text-gray-500 mb-2 text-center">Or type a new package name below</p>
+
+      <input
+        type="text"
+        placeholder="Package Name"
+        className="w-full border px-2 py-1 rounded text-sm mb-2"
+        value={packageModal.name}
+        onChange={(e) =>
+          setPackageModal({ ...packageModal, name: e.target.value })
+        }
+      />
+
+      <div className="flex justify-end gap-2 mt-4">
+        <button
+          className="px-3 py-1 text-xs bg-gray-300 rounded"
+          onClick={() => setPackageModal({ visible: false, name: "" })}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="px-3 py-1 text-xs bg-blue-600 text-white rounded"
+          onClick={handleSavePackage}
+        >
+          Save Package
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
     </div>
   );
