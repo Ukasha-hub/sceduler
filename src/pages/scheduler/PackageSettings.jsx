@@ -54,24 +54,36 @@ const PackageSettings = () => {
       <h2 className="text-lg font-bold mb-4">Package Settings</h2>
 
       {/* Package dropdown */}
-      <div className="mb-4">
-        <select
-          className="border px-2 py-1 rounded w-full max-w-xs"
-          value={selectedPackageName}
-          onChange={(e) => setSelectedPackageName(e.target.value)}
-        >
-          <option value="">-- Select Package --</option>
-          {packages.map((pkg) => (
-            <option key={pkg.name} value={pkg.name}>
-              {pkg.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="relative w-full  max-w-xs mb-4">
+  <select
+    className={`border rounded px-2 pt-2 w-full h-8 text-xs bg-white
+                focus:outline-none focus:ring-2 focus:ring-blue-500`}
+    value={selectedPackageName}
+    onChange={(e) => setSelectedPackageName(e.target.value)}
+  >
+    <option value="" disabled></option>
+    {packages.map((pkg) => (
+      <option key={pkg.name} value={pkg.name}>
+        {pkg.name}
+      </option>
+    ))}
+  </select>
+
+  <label
+    className={`absolute left-2 top-1 z-10 origin-left -translate-y-3 scale-75
+                bg-white px-1 text-gray-500 transition-all duration-200
+                peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
+                peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+                peer-placeholder-shown:scale-100
+                `}
+  >
+    Select Package
+  </label>
+</div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="table table-collapse table-hover min-w-[600px]">
+        <table className="table table-collapse text-xs table-hover min-w-[600px]">
           <thead>
             <tr>
               
@@ -81,7 +93,7 @@ const PackageSettings = () => {
               <th className="border-b p-2 text-left">Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white">
             {rows.length === 0 ? (
               <tr>
                 <td colSpan="5" className="text-center py-2 text-gray-500">

@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-const getInitialData = () => {
-  const stored = localStorage.getItem("users");
-  return stored ? JSON.parse(stored) : [];
-};
+
 
 const UserSetup = () => {
-  const [tableData, setTableData] = useState(getInitialData());
+  const [tableData, setTableData] = useState([]);
   const [activeTab, setActiveTab] = useState("primary");
   const [formInputs, setFormInputs] = useState({
-    userId: "",
+    user_id: "",
     name: "",
     department: "",
     role: "",
@@ -27,8 +25,35 @@ const UserSetup = () => {
   const crudList = ["isRead", "isWrite", "isUpdate", "isDelete"];
 
   useEffect(() => {
-    localStorage.setItem("users", JSON.stringify(tableData));
-  }, [tableData]);
+    fetchUsers();
+  }, []);
+  
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get("http://localhost:8080/api/v1/users/users/users");
+  
+      const formatted = res.data.map((u) => ({
+        id: u.id,
+        user_id: u.user_id,
+        name: u.name,
+        department: u.department,
+        role: u.role,
+        modules: u.privileges.map((p) => p.module_name),
+        crudMatrix: {
+          isRead: Object.fromEntries(u.privileges.map(p => [p.module_name, p.can_read])),
+          isWrite: Object.fromEntries(u.privileges.map(p => [p.module_name, p.can_write])),
+          isUpdate: Object.fromEntries(u.privileges.map(p => [p.module_name, p.can_update])),
+          isDelete: Object.fromEntries(u.privileges.map(p => [p.module_name, p.can_delete])),
+        },
+      }));
+  
+      setTableData(formatted);
+    } catch (error) {
+      console.log(error.response?.data);
+      console.error("GET USERS FAILED:", error);
+    }
+  };
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -37,7 +62,7 @@ const UserSetup = () => {
 
   const resetForm = () => {
     setFormInputs({
-      userId: "",
+      user_id: "",
       name: "",
       department: "",
       role: "",
@@ -51,51 +76,89 @@ const UserSetup = () => {
     });
   };
 
-  const handleSubmitUserSettings = (e) => {
+  const handleSubmitUserSettings = async (e) => {
     e.preventDefault();
-    if (!formInputs.userId || !formInputs.name || !formInputs.department) {
+  
+    if (!formInputs.user_id || !formInputs.name || !formInputs.department) {
       alert("All fields are required!");
       return;
     }
-
-    const newRow = {
-      ...formInputs,
-      modules: ["Scheduler"], // default if skip
-      crud: { isRead: true, isWrite: false, isUpdate: false, isDelete: false },
-      id: Date.now(),
-    };
-
-    setTableData((prev) => [...prev, newRow]);
-    resetForm();
+  
+    // default privileges
+    const defaultPrivileges = [
+      {
+        module_name: "Scheduler",
+        can_read: true,
+        can_write: false,
+        can_update: false,
+        can_delete: false,
+      },
+    ];
+  
+    try {
+      await axios.post("http://localhost:8080/api/v1/users/users/create", {
+        user_id: formInputs.user_id,
+        name: formInputs.name,
+        department: formInputs.department,
+        role: formInputs.role,
+        privileges: defaultPrivileges,
+      });
+  
+      await fetchUsers(); // refresh table  
+      resetForm();
+      alert("User added successfully!"); 
+  
+    } catch (error) {
+      console.log(error.response?.data);
+      console.error("CREATE USER FAILED:", error);
+    }
   };
+  
 
-  const handlePrivilegeSubmit = () => {
-    const newRow = {
-      ...formInputs,
-      id: Date.now(),
-    };
-
-    setTableData((prev) => [...prev, newRow]);
-    resetForm();
-    setActiveTab("primary");
+  const handlePrivilegeSubmit = async () => {
+    const privilegesPayload = modulesList.map((module) => ({
+      module_name: module,
+      can_read: formInputs.crudMatrix?.isRead?.[module] || false,
+      can_write: formInputs.crudMatrix?.isWrite?.[module] || false,
+      can_update: formInputs.crudMatrix?.isUpdate?.[module] || false,
+      can_delete: formInputs.crudMatrix?.isDelete?.[module] || false,
+    }));
+  
+    try {
+      await axios.post("http://localhost:8080/api/v1/users/users/create", {
+        user_id: formInputs.user_id,
+        name: formInputs.name,
+        department: formInputs.department,
+        role: formInputs.role,
+        privileges: privilegesPayload,
+      });
+  
+      await fetchUsers();
+      resetForm();
+      alert("User added with privileges successfully!");
+      setActiveTab("primary");
+  
+    } catch (error) {
+      console.log(error.response?.data);
+      console.error("CREATE USER WITH PRIVILEGES FAILED:", error);
+    }
   };
+  
 
   // PRIVILEGE TABLE HANDLER
-  const togglePrivilege = (crud, module) => {
-    setFormInputs((prev) => {
-      const currentModules = prev.modules.includes(module)
-        ? prev.modules
-        : [...prev.modules, module]; // auto-add module if any permission set
-      return {
-        ...prev,
-        modules: currentModules,
-        crudMatrix: {
-          ...prev.crudMatrix,
-          [crud]: { ...prev.crud[crud], [module]: !prev.crudMatrix?.[crud]?.[module] },
+  const togglePrivilege = (crud, mod) => {
+    setFormInputs((prev) => ({
+      ...prev,
+      crudMatrix: {
+        ...prev.crudMatrix,
+        [crud]: {
+          ...prev.crudMatrix?.[crud],
+          [mod]: !prev.crudMatrix?.[crud]?.[mod],
         },
-      };
-    });
+      },
+    }));
   };
+  
 
   // Initialize crudMatrix for privilege table
   const crudMatrix = {};
@@ -128,7 +191,7 @@ const handleRightClick = (e, id) => {
   e.preventDefault();
   setSelectedRows([id]); // select row before action
 
-  const rect = e.currentTarget.closest(".card-body").getBoundingClientRect();
+  const rect = e.currentTarget.closest(".table-responsive").getBoundingClientRect();
 
   setContextMenu({
     visible: true,
@@ -137,11 +200,35 @@ const handleRightClick = (e, id) => {
   });
 };
 
-const handleDeleteRows = () => {
-  setTableData((prev) => prev.filter((row) => !selectedRows.includes(row.id)));
-  setSelectedRows([]);
-  setContextMenu({ ...contextMenu, visible: false });
+const handleDeleteRows = async () => {
+  try {
+    // Call API to delete each selected user
+    await Promise.all(
+      selectedRows.map((id) =>
+        axios.delete(`http://localhost:8080/api/v1/users/users/delete/${id}`)
+      )
+    );
+
+    // Refresh table
+    await fetchUsers();
+
+    // Clear selected rows and hide context menu
+    setSelectedRows([]);
+    setContextMenu({ ...contextMenu, visible: false });
+
+    alert("Selected user(s) deleted successfully!");
+  } catch (error) {
+    console.error("DELETE USER FAILED:", error.response?.data || error);
+    alert("Failed to delete user(s). Please try again.");
+  }
 };
+
+
+const isUserSettingsFilled =
+  formInputs.user_id.trim() !== "" &&
+  formInputs.name.trim() !== "" &&
+  formInputs.department.trim() !== "" &&
+  formInputs.role.trim() !== "";
 
   return (
     <div className="flex gap-3 flex-col lg:flex-row mt-4 text-sm px-2">
@@ -172,7 +259,7 @@ const handleDeleteRows = () => {
               <th className="border-b p-2 text-left">Department</th>
               <th className="border-b p-2 text-left">Role</th>
               <th className="border-b p-2 text-left">Modules</th>
-              <th className="border-b p-2 text-left">CRUD</th>
+              
             </tr>
           </thead>
 
@@ -195,16 +282,24 @@ const handleDeleteRows = () => {
                   />
                 </td>
 
-                <td  className="border-t p-2">{row.userId}</td>
+                <td  className="border-t p-2">{row.user_id}</td>
                 <td  className="border-t p-2">{row.name}</td>
                 <td  className="border-t p-2">{row.department}</td>
                 <td  className="border-t p-2">{row.role}</td>
-                <td  className="border-t p-2">{row.modules?.join(", ")}</td>
-                <td  className="border-t p-2">
-                  {Object.entries(row.crud || {}).map(([key, val]) =>
-                    val ? `${key}: Yes ` : `${key}: No `
-                  )}
-                </td>
+                <td className="border-t p-2">
+  <div className="flex flex-col gap-1">
+    {row.modules?.map((moduleName) => (
+      <div key={moduleName} className="text-xs">
+        <span className="font-semibold">{moduleName}:</span>{" "}
+        <span>R: {row.crudMatrix?.isRead?.[moduleName] ? "✔️" : "✘"}</span>{" "}
+        <span>W: {row.crudMatrix?.isWrite?.[moduleName] ? "✔️" : "✘"}</span>{" "}
+        <span>U: {row.crudMatrix?.isUpdate?.[moduleName] ? "✔️" : "✘"}</span>{" "}
+        <span>D: {row.crudMatrix?.isDelete?.[moduleName] ? "✔️" : "✘"}</span>
+      </div>
+    ))}
+  </div>
+</td>
+               
               </tr>
             ))}
           </tbody>
@@ -257,11 +352,15 @@ const handleDeleteRows = () => {
             </li>
             <li
               className={`px-4 py-2 cursor-pointer ${
-                activeTab === "secondary"
+                !isUserSettingsFilled
+                  ? "text-gray-400 cursor-not-allowed"
+                  : activeTab === "secondary"
                   ? "text-blue-600 border-b-2 border-blue-600"
                   : "text-gray-600 hover:text-blue-500"
               }`}
-              onClick={() => setActiveTab("secondary")}
+              onClick={() => {
+                if (isUserSettingsFilled) setActiveTab("secondary");
+              }}
             >
               Privilege
             </li>
@@ -273,7 +372,7 @@ const handleDeleteRows = () => {
 {activeTab === "primary" && (
   <form onSubmit={handleSubmitUserSettings}>
 
-    {["userId", "name", "department"].map((field) => (
+    {["user_id", "name", "department"].map((field) => (
       <div key={field} className="mb-4 relative">
         <input
           type="text"
@@ -333,15 +432,22 @@ const handleDeleteRows = () => {
         className="h-7 border-2 rounded-md  btn-secondary w-full"
         onClick={handleSubmitUserSettings} // skip -> default Scheduler + isRead
       >
-        Skip
+        Add User
       </button>
       <button
-        type="button"
-        className="h-7 border-2 rounded-md  btn-primary w-full"
-        onClick={() => setActiveTab("secondary")}
-      >
-        Give Privilege
-      </button>
+  type="button"
+  disabled={!isUserSettingsFilled}
+  className={`h-7 border-2 rounded-md w-full ${
+    !isUserSettingsFilled
+      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+      : "btn-primary"
+  }`}
+  onClick={() => {
+    if (isUserSettingsFilled) setActiveTab("secondary");
+  }}
+>
+  Give Privilege
+</button>
     </div>
   </form>
 )}
@@ -379,7 +485,7 @@ const handleDeleteRows = () => {
                 className="h-7 border-2 rounded-md btn-primary mt-3 w-full"
                 onClick={handlePrivilegeSubmit}
               >
-                Set Privilege
+                Set Privilege and Add user
               </button>
             </div>
           )}
