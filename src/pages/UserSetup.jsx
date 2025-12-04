@@ -30,7 +30,7 @@ const UserSetup = () => {
   
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:8080/api/v1/users/users/users");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/users/users/users`);
   
       const formatted = res.data.map((u) => ({
         id: u.id,
@@ -96,7 +96,7 @@ const UserSetup = () => {
     ];
   
     try {
-      await axios.post("http://localhost:8080/api/v1/users/users/create", {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/users/create`, {
         user_id: formInputs.user_id,
         name: formInputs.name,
         department: formInputs.department,
@@ -125,7 +125,7 @@ const UserSetup = () => {
     }));
   
     try {
-      await axios.post("http://localhost:8080/api/v1/users/users/create", {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/v1/users/users/create`, {
         user_id: formInputs.user_id,
         name: formInputs.name,
         department: formInputs.department,
@@ -205,7 +205,7 @@ const handleDeleteRows = async () => {
     // Call API to delete each selected user
     await Promise.all(
       selectedRows.map((id) =>
-        axios.delete(`http://localhost:8080/api/v1/users/users/delete/${id}`)
+        axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/users/users/delete/${id}`)
       )
     );
 
@@ -234,7 +234,7 @@ const isUserSettingsFilled =
     <div className="flex gap-3 flex-col lg:flex-row mt-4 text-sm px-2">
 
       {/* TABLE SECTION */}
-      <div className="w-full  lg:w-3/4 ">
+      <div className="w-full  lg:w-2/3 ">
     <div className="card">
       <div className="card-header p-2  ">
         <h3 className="card-title p-2 font-bold text-black">Users Table</h3>
@@ -334,7 +334,7 @@ const isUserSettingsFilled =
   </div>
 
       {/* FORM SECTION */}
-      <div className="w-full lg:w-2/4 card">
+      <div className="w-full lg:w-1/3 card">
       <div className="card-header p-2  bg-blue-500">
         <h3 className="card-title p-2 font-bold text-white">Users Table</h3>
       </div>

@@ -1,12 +1,35 @@
-// HourlyAdSettings.jsx
-import React, { useContext } from "react";
-import { HourlyAdContext } from "../../context/scheduler/HourlyAdProvider";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import TimePicker from "react-time-picker"; // make sure you install this package
+
+const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/hourly-ad/`;
 
 const HourlyAdSettings = () => {
-  const { hourlyInterval, setHourlyInterval } = useContext(HourlyAdContext);
+  const [hourlyInterval, setHourlyInterval] = useState("01:00:00"); // default 1 hour
 
-  const handleIntervalChange = (e) => {
-    setHourlyInterval(Number(e.target.value));
+  useEffect(() => {
+    fetchInterval();
+  }, []);
+
+  const fetchInterval = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      setHourlyInterval(res.data.hourly_interval || "01:00:00");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load hourly ad settings");
+    }
+  };
+
+  const handleIntervalChange = async (value) => {
+    setHourlyInterval(value);
+
+    try {
+      await axios.post(API_URL, { hourly_interval: value });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update interval");
+    }
   };
 
   return (
@@ -17,42 +40,19 @@ const HourlyAdSettings = () => {
         </div>
 
         <form className="p-2">
-
-          {/* Floating Select Field */}
           <div className="mb-4 relative">
-            <select
-              value={hourlyInterval}
+            <TimePicker
               onChange={handleIntervalChange}
-              placeholder=" "
-              className="
-                peer block w-full rounded border border-gray-300 px-2 px-2 pt-3 pb-1 text-xs h-10 bg-white
-                focus:border-blue-500 focus:outline-none
-              "
-            >
-              <option value="10">10 Minute</option>
-              <option value="30">30 Minute</option>
-              <option value="60">1 Hour</option>
-              <option value="120">2 Hour</option>
-              <option value="180">3 Hour</option>
-              <option value="240">4 Hour</option>
-              <option value="360">6 Hour</option>
-              <option value="480">8 Hour</option>
-              <option value="720">12 Hour</option>
-            </select>
-
-            <label
-              className="
-                absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
-                bg-white px-1 text-gray-500 transition-all duration-200
-                peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
-                peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
-                peer-placeholder-shown:scale-100
-              "
-            >
-              Slot Interval
+              value={hourlyInterval}
+              format="HH:mm:ss"
+              disableClock={true}
+              clearIcon={null}
+              className="w-full ml-2 mt-3 text-xs"
+            />
+            <label className="absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75 bg-white px-1 text-gray-500 transition-all duration-200">
+              Interval (HH:mm:ss)
             </label>
           </div>
-
         </form>
       </div>
     </div>

@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+const API_URL = "http://172.16.9.132:8080/api/v1/package/";
 
 const PackageSettings = () => {
   const [packages, setPackages] = useState([]);
@@ -6,10 +9,18 @@ const PackageSettings = () => {
   const [rows, setRows] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
 
-  // Load packages from localStorage
+  // Load packages from API
+  const fetchPackages = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      setPackages(res.data);
+    } catch (err) {
+      console.error("Failed to fetch packages", err);
+    }
+  };
+
   useEffect(() => {
-    const storedPackages = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
-    setPackages(storedPackages);
+    fetchPackages();
   }, []);
 
   // Update rows when package changes
@@ -19,19 +30,50 @@ const PackageSettings = () => {
     setSelectedRows([]);
   }, [selectedPackageName, packages]);
 
-  // Delete a single row
-  const handleDeleteRow = (rowId) => {
-    const pkgIndex = packages.findIndex((p) => p.name === selectedPackageName);
-    if (pkgIndex === -1) return;
-
-    const updatedItems = packages[pkgIndex].items.filter((item) => item.id !== rowId);
-    const updatedPackages = [...packages];
-    updatedPackages[pkgIndex].items = updatedItems;
-
-    setPackages(updatedPackages);
-    setRows(updatedItems);
-    localStorage.setItem("razuna_packages", JSON.stringify(updatedPackages));
+  // Delete a single row via PATCH API
+  const handleDeleteRow = async (rowId) => {
+    const pkg = packages.find((p) => p.name === selectedPackageName);
+    if (!pkg) return;
+  
+    try {
+      const res = await axios.delete(`${API_URL}${pkg.id}/item/${rowId}`);
+  
+      // Update UI with response
+      setRows(res.data.items);
+      setPackages((prev) =>
+        prev.map((p) => (p.id === pkg.id ? res.data : p))
+      );
+    } catch (err) {
+      console.error("Failed to delete item", err);
+      alert("Failed to delete item");
+    }
   };
+
+  const handleDeletePackage = async () => {
+    const pkg = packages.find((p) => p.name === selectedPackageName);
+    if (!pkg) return;
+  
+    if (!window.confirm("Are you sure you want to delete this package?")) return;
+  
+    try {
+      await axios.delete(`${API_URL}${pkg.id}`);
+  
+      // Remove from UI
+      const remaining = packages.filter((p) => p.id !== pkg.id);
+      setPackages(remaining);
+  
+      // Reset current selection
+      setSelectedPackageName("");
+      setRows([]);
+  
+      alert("Package deleted successfully!");
+    } catch (err) {
+      console.error("Failed to delete package", err);
+      alert("Failed to delete package");
+    }
+  };
+  
+  
 
   // Select all rows
   const handleSelectAll = () => {
@@ -54,39 +96,44 @@ const PackageSettings = () => {
       <h2 className="text-lg font-bold mb-4">Package Settings</h2>
 
       {/* Package dropdown */}
-      <div className="relative w-full  max-w-xs mb-4">
-  <select
-    className={`border rounded px-2 pt-2 w-full h-8 text-xs bg-white
-                focus:outline-none focus:ring-2 focus:ring-blue-500`}
-    value={selectedPackageName}
-    onChange={(e) => setSelectedPackageName(e.target.value)}
-  >
-    <option value="" disabled></option>
-    {packages.map((pkg) => (
-      <option key={pkg.name} value={pkg.name}>
-        {pkg.name}
-      </option>
-    ))}
-  </select>
+      <div className="relative w-full max-w-xs mb-4">
+        <select
+          className="border rounded px-2 pt-2 w-full h-8 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={selectedPackageName}
+          onChange={(e) => setSelectedPackageName(e.target.value)}
+        >
+          <option value="" disabled>
+            -- Select Package --
+          </option>
+          {packages.map((pkg) => (
+            <option key={pkg.name} value={pkg.name}>
+              {pkg.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-  <label
-    className={`absolute left-2 top-1 z-10 origin-left -translate-y-3 scale-75
-                bg-white px-1 text-gray-500 transition-all duration-200
-                peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500
-                peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
-                peer-placeholder-shown:scale-100
-                `}
+      {selectedPackageName && (
+  <button
+    className="px-3 py-1 bg-red-600 text-white text-xs rounded mb-3"
+    onClick={handleDeletePackage}
   >
-    Select Package
-  </label>
-</div>
+    Delete Package
+  </button>
+)}
 
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="table table-collapse text-xs table-hover min-w-[600px]">
           <thead>
             <tr>
-              
+              <th className="border-b p-2 text-left">
+                <input
+                  type="checkbox"
+                  checked={selectedRows.length === rows.length && rows.length > 0}
+                  onChange={handleSelectAll}
+                />
+              </th>
               <th className="border-b p-2 text-left">Name</th>
               <th className="border-b p-2 text-left">ID</th>
               <th className="border-b p-2 text-left">Duration</th>
@@ -109,7 +156,13 @@ const PackageSettings = () => {
                   }`}
                   onClick={() => handleRowClick(row.id)}
                 >
-                  
+                  <td className="border-t p-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.includes(row.id)}
+                      onChange={() => handleRowClick(row.id)}
+                    />
+                  </td>
                   <td className="border-t p-2">{row.name}</td>
                   <td className="border-t p-2">{row.id}</td>
                   <td className="border-t p-2">{row.duration}</td>

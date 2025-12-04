@@ -11,6 +11,9 @@ import autoTable from "jspdf-autotable";
 import { FaFileCsv } from "react-icons/fa6";
 import { FaFilePdf } from "react-icons/fa6";
 import { HourlyAdContext } from '../../context/scheduler/HourlyAdProvider';
+import axios from "axios";
+
+const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/hourly-ad/`;
 
 const Tables = () => {
   const [metaData, setMetaData] = useState([]);
@@ -1152,11 +1155,33 @@ const getToday = () => {
   return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
 };
 
-const { hourlyInterval } = useContext(HourlyAdContext);
+const [hourlyInterval, setHourlyInterval] = useState("");
 
-const generateSlots = (interval) => {
+// Fetch interval from API
+useEffect(() => {
+  const fetchHourlyInterval = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      if (res.data && res.data.hourly_interval) {
+        setHourlyInterval(res.data.hourly_interval);
+      }
+    } catch (err) {
+      console.error("Failed to fetch hourly interval", err);
+    }
+  };
+  fetchHourlyInterval();
+}, []);
+
+const parseTimeToMinutes = (timeStr) => {
+  const [h, m, s] = timeStr.split(":").map(Number);
+  return h * 60 + m + Math.floor(s / 60);
+};
+
+// Generate slots using HH:mm:ss interval
+const generateSlots = (intervalTimeStr) => {
   const slots = [];
   const totalMinutes = 24 * 60;
+  const interval = parseTimeToMinutes(intervalTimeStr);
 
   for (let start = 0; start < totalMinutes; start += interval) {
     const end = Math.min(start + interval - 1, totalMinutes - 1);
@@ -1209,13 +1234,13 @@ const generateSlots = (interval) => {
     </label>
     <div className="col-sm-8 pl-1">
     <select className="form-control form-control-sm">
-          <option value="">Select Ad</option>
-          {generateSlots(hourlyInterval).map((slot, idx) => (
-            <option key={idx} value={slot}>
-              {slot}
-            </option>
-          ))}
-        </select>
+  <option value="">Select Ad</option>
+  {generateSlots(hourlyInterval).map((slot, idx) => (
+    <option key={idx} value={slot}>
+      {slot}
+    </option>
+  ))}
+</select>
     </div>
   </div>
 

@@ -1,25 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react'
-
-const initialTableData = [
-    { id: 1, engine: "PROMO", browser: "#07865F", },
-    { id: 2, engine: "COM", browser: "IE 5.0",  },
-    { id: 3, engine: "Webkit", browser: "Safari 1.3",  },
-    { id: 4, engine: "Webkit", browser: "Safari 2.0",  },
-    { id: 5, engine: "Webkit", browser: "Safari 3.0", },
-    { id: 6, engine: "Webkit", browser: "OmniWeb 5.5", },
-    { id: 7, engine: "Other browsers", browser: "All others",  },
-  ];
+import axios from "axios";
 
 
+
+ 
 
 const FilterSetup = () => {
     const [tableData, setTableData] = useState([]);
       const [selectedRows, setSelectedRows] = useState([]);
       const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rowId: null });
+      const [showDeleteModal, setShowDeleteModal] = useState(false);
       const [type, setType] = useState("");
 const [color, setColor] = useState("#000000");
+
+const [editId, setEditId] = useState(null);
     
       const tableRef = useRef();
+
+      const api = axios.create({
+        baseURL: process.env.REACT_APP_API_URL,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      //console.log("API URL:", process.env.REACT_APP_API_URL);
     
       // Hide context menu on click outside
       useEffect(() => {
@@ -60,51 +63,80 @@ const [color, setColor] = useState("#000000");
       };
     
       // Delete selected rows
-      const handleDeleteRows = async () => {
-        await Promise.all(selectedRows.map(id =>
-          fetch(`http://localhost:8080/api/v1/filters/${id}`, { method: "DELETE" })
-        ));
-        setSelectedRows([]);
-        loadTableData(); // Refresh table
+      const handleDeleteRows = () => {
+        if (selectedRows.length === 0) return;
+        setShowDeleteModal(true);
+      };
+
+      const confirmDelete = async () => {
+        try {
+          await Promise.all(selectedRows.map((id) => api.delete(`/api/v1/filters/${id}`)));
+          setSelectedRows([]);
+          loadTableData();
+        } catch (err) {
+          console.error(err);
+        }
+        setShowDeleteModal(false);
       };
 
       const loadTableData = async () => {
         try {
-          const res = await fetch("http://127.0.0.1:8080/api/v1/filters");
-          const data = await res.json();
+          const { data } = await api.get("/api/v1/filters");
           setTableData(data);
         } catch (err) {
-          console.error("Failed to load filters:", err);
+          console.error(err);
         }
       };
-      
       useEffect(() => {
         loadTableData();
       }, []);
 
       const handleSave = async () => {
         if (!type) return alert("Type is required");
-      
-        const payload = { type, color };
         try {
-          const res = await fetch("http://127.0.0.1:8080/api/v1/filters", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-      
-          if (!res.ok) throw new Error("Failed to save filter");
-      
-          // Clear inputs
+          await api.post("/api/v1/filters", { type, color });
           setType("");
           setColor("#000000");
-      
-          // Reload table
           loadTableData();
         } catch (err) {
           console.error(err);
           alert("Error saving filter");
         }
+      };
+
+      const handleEditFromContext = () => {
+        if (!contextMenu.rowId) return;
+      
+        const row = tableData.find((r) => r.id === contextMenu.rowId);
+        if (!row) return;
+      
+        setEditId(row.id);
+        setType(row.type);
+        setColor(row.color);
+      
+        setContextMenu({ ...contextMenu, visible: false });
+      };
+      
+      const handleUpdate = async () => {
+        if (!editId) return alert("No row selected for edit!");
+      
+        try {
+          await api.put(`/api/v1/filters/${editId}`, { type, color });
+          setEditId(null);
+          setType("");
+          setColor("#000000");
+          loadTableData();
+          alert("Updated successfully");
+        } catch (err) {
+          console.error(err);
+          alert("Error updating filter");
+        }
+      };
+
+      const handleResetEdit = () => {
+        setEditId(null);
+        setType("");
+        setColor("#000000");
       };
 
       
@@ -172,6 +204,12 @@ const [color, setColor] = useState("#000000");
     }}
   >
     <ul className="p-1 m-0 list-none">
+    <li
+  className="p-2 hover:bg-gray-100 cursor-pointer"
+  onClick={handleEditFromContext}
+>
+  Edit
+</li>
       <li
         className="px-4 py-1 hover:bg-red-100 cursor-pointer text-red-600"
         onClick={handleDeleteRows}
@@ -199,6 +237,7 @@ const [color, setColor] = useState("#000000");
       type="text"
       name="type"
       placeholder=" "
+      value={type}
       onChange={(e) => setType(e.target.value)}
       className="
         peer block w-full rounded border border-gray-300 px-2 
@@ -226,6 +265,7 @@ const [color, setColor] = useState("#000000");
       name="color"
       placeholder=" "
       defaultValue="#000000"
+      value={color}
       onChange={(e) => setColor(e.target.value)}
       className="
         peer block w-full rounded border border-gray-300 px-2 
@@ -251,11 +291,62 @@ const [color, setColor] = useState("#000000");
 
     <div className="card-footer flex flex-row justify-between gap-3 ">
            
-            <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1 "  onClick={handleSave}> Save</button>
-            <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1">Edit</button>
+           
+            <button
+    type="button"
+    className="h-7 border-2 rounded-md border-blue-400 btn-outline-primary w-full"
+    onClick={editId ? handleUpdate : handleSave}
+  >
+    {editId ? "Update" : "Save"}
+  </button>
+
+  {editId && (
+    <button
+      type="button"
+      className="h-7 border-2 rounded-md border-gray-400 w-full"
+      onClick={handleResetEdit}
+    >
+      Reset
+    </button>
+  )}
+
           </div>
   </form>
 </div>
+{/* DELETE CONFIRM MODAL */}
+{showDeleteModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+    <div className="bg-white p-4 rounded shadow-lg w-80 text-xs">
+      <h3 className="font-semibold mb-2">Confirm Delete</h3>
+
+      <p className="mb-2">Are you sure you want to delete the following items?</p>
+
+      <ul className="list-disc pl-5 max-h-40 overflow-y-auto text-gray-700 mb-3">
+        {selectedRows.map((id) => {
+          const row = tableData.find((r) => r.id === id);
+          return <li key={id}>{row?.type}</li>;
+        })}
+      </ul>
+
+      <div className="flex justify-end gap-2 mt-3">
+        <button
+          className="px-3 py-1 border rounded"
+          onClick={() => setShowDeleteModal(false)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="px-3 py-1 bg-red-500 text-white rounded"
+          onClick={confirmDelete}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   )
 }

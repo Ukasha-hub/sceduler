@@ -1,21 +1,29 @@
 import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
 
-const initialTableData = [
-  { id: 1, engine: "Trident", browser: " স্থল স্লাগ", platform: " স্থল স্লাগ", },
-  { id: 2, engine: "Trident", browser: " আচাটিনেলোইডিয়া", platform: " আচাটিনেলোইডিয়া", },
-  { id: 3, engine: "Webkit", browser: "কোচলিকোপয়েডিয়া ", platform: "কোচলিকোপয়েডিয়া ",  },
-  { id: 4, engine: "Webkit", browser: "পারটুলোইডিয়া ", platform: "পারটুলোইডিয়া ", },
-  { id: 5, engine: "Webkit", browser: "পিউপিলোইডিয়া ", platform: "পিউপিলোইডিয়া ", },
-  { id: 6, engine: "Webkit", browser: "OmniWeb 5.5", platform: "OSX.4+", },
-  { id: 7, engine: "Other browsers", browser: "All others", platform: "-",  },
-];
 
 export const SlugSetup = () => {
-  const [tableData, setTableData] = useState(initialTableData);
+  const [tableData, setTableData] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rowId: null });
 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const tableRef = useRef();
+
+  useEffect(() => {
+    fetchSlugs();
+  }, []);
+  
+  const fetchSlugs = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/slug/`);
+      setTableData(response.data);
+    } catch (error) {
+      console.error("Fetch error:", error);
+      alert("Failed to fetch slugs");
+    }
+  };
 
   // Hide context menu on click outside
   useEffect(() => {
@@ -42,6 +50,24 @@ export const SlugSetup = () => {
     }
   };
 
+  const handleCreate = async () => {
+    try {
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/v1/slug/`,
+        formData
+      );
+  
+      setFormData({  programe_name: "", slug: "", slug_repeat: "" });
+      fetchSlugs(); // refresh table
+  
+      alert("Created successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Create failed");
+    }
+  };
+  
+
   // Right-click context menu
   const handleRightClick = (e, rowId) => {
     e.preventDefault();
@@ -56,12 +82,73 @@ export const SlugSetup = () => {
   };
 
   // Delete selected rows
-  const handleDeleteRows = () => {
-    setTableData(tableData.filter((row) => !selectedRows.includes(row.id)));
-    setSelectedRows([]);
-    setContextMenu({ ...contextMenu, visible: false });
-    alert("Selected row(s) deleted!");
+  const handleDeleteRows = async () => {
+    try {
+      for (const id of selectedRows) {
+        await axios.delete(`${process.env.REACT_APP_API_URL}/api/v1/slug/${id}`);
+      }
+  
+      setSelectedRows([]);
+      setContextMenu({ ...contextMenu, visible: false });
+      fetchSlugs();
+  
+      alert("Deleted successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Delete failed");
+    }
   };
+  
+
+  const [editId, setEditId] = useState(null);
+
+const [formData, setFormData] = useState({
+  programe_name: "",
+  slug: "",
+  slug_repeat: "",
+});
+
+const handleEditRow = (id) => {
+  const row = tableData.find((r) => r.id === id);
+
+  setFormData({
+    programe_name: row.programe_name,
+    slug: row.slug,
+    slug_repeat: row.slug_repeat,
+  });
+
+  setEditId(id);
+  setContextMenu({ ...contextMenu, visible: false });
+};
+
+const handleSave = async () => {
+  if (!editId) {
+    handleCreate();
+    return;
+  }
+
+  try {
+    await axios.put(
+      `${process.env.REACT_APP_API_URL}/api/v1/slug/${editId}`,
+      formData
+    );
+
+    setEditId(null);
+    setFormData({  programe_name: "", slug: "", slug_repeat: "" });
+    fetchSlugs();
+
+    alert("Updated successfully!");
+  } catch (error) {
+    console.error(error);
+    alert("Update failed");
+  }
+};
+
+const handleReset = () => {
+  setEditId(null);
+  setFormData({ programe_name: "", slug: "", slug_repeat: "" });
+};
+
 
   return (
     <div className="flex lg:flex-row flex-col mt-2 text-xs gap-4">
@@ -105,9 +192,9 @@ export const SlugSetup = () => {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    <td className="border-t p-2">{row.engine}</td>
-                    <td className="border-t p-2">{row.browser}</td>
-                    <td className="border-t p-2">{row.platform}</td>
+                    <td className="border-t p-2">{row.programe_name}</td>
+                    <td className="border-t p-2">{row.slug}</td>
+                    <td className="border-t p-2">{row.slug_repeat}</td>
                   
                   </tr>
                 ))}
@@ -128,9 +215,16 @@ export const SlugSetup = () => {
     }}
   >
     <ul className="p-1 m-0 list-none">
+      {/* EDIT */}
+      <li
+        className="px-4 py-1 hover:bg-blue-100 cursor-pointer text-blue-600"
+        onClick={() => handleEditRow(contextMenu.rowId)}
+      >
+        Edit
+      </li>
       <li
         className="px-4 py-1 hover:bg-red-100 cursor-pointer text-red-600"
-        onClick={handleDeleteRows}
+        onClick={() => setShowConfirmModal(true)}
       >
         Delete
       </li>
@@ -155,6 +249,8 @@ export const SlugSetup = () => {
       <div className="mb-4 relative">
         <input
           type="text"
+          value={formData.programe_name}
+  onChange={(e) => setFormData({ ...formData,  programe_name: e.target.value })}
           placeholder=" "
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
@@ -178,6 +274,8 @@ export const SlugSetup = () => {
       <div className="mb-4 relative">
         <input
           type="text"
+          value={formData.slug}
+  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
           placeholder=" "
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
@@ -201,6 +299,8 @@ export const SlugSetup = () => {
       <div className="mb-4 relative">
         <input
           type="text"
+          value={formData.slug_repeat}
+  onChange={(e) => setFormData({ ...formData, slug_repeat: e.target.value })}
           placeholder=" "
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
@@ -223,15 +323,67 @@ export const SlugSetup = () => {
     </div>
 
     <div className="card-footer flex flex-row justify-between gap-3 ">
-      <button type="button" className=" h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1 ">
-        Edit
-      </button>
-      <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1">
-        Save
-      </button>
+      
+      <button
+              type="button"
+              className="h-7 border-2 rounded-md border-blue-400 btn-outline-primary flex-1"
+              onClick={handleSave}
+            >
+              {editId ? "Update" : "Save"}
+            </button>
+             {/* RESET BUTTON – only visible when editing */}
+  {editId && (
+    <button
+      type="button"
+      className="h-7 border-2 rounded-md border-gray-400 btn-outline-secondary flex-1"
+      onClick={handleReset}
+    >
+      Reset
+    </button>
+  )}
     </div>
   </form>
 </div>
+
+{/* CONFIRM DELETE MODAL */}
+{showConfirmModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="bg-white p-4 rounded shadow-md w-80 text-xs">
+      <h3 className="font-semibold mb-2">Are you sure?</h3>
+      <p className="mb-2">You are about to delete the following items:</p>
+
+      <ul className="list-disc ml-4 mb-4">
+        {selectedRows.map((id) => {
+          const item = tableData.find((row) => row.id === id);
+          return (
+            <li key={id}>
+              {item?.programe_name || "(no name)"} — {item?.slug}
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex justify-end gap-3">
+        <button
+          className="px-3 py-1 border rounded text-gray-600 border-gray-400"
+          onClick={() => setShowConfirmModal(false)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="px-3 py-1 bg-red-500 text-white rounded"
+          onClick={async () => {
+            await handleDeleteRows();
+            setShowConfirmModal(false);
+          }}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
     </div>
   );

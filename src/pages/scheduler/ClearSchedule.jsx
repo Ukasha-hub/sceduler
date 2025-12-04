@@ -181,7 +181,7 @@ const ClearSchedule = () => {
     <div className="card-footer flex flex-row justify-between gap-3 ">
            
             <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary  flex-1 "> Save</button>
-            <button type="button" className="h-7 border-2 rounded-md  border-blue-400 btn-outline-primary flex-1">Edit</button>
+            
           </div>
   </form>
 </div>

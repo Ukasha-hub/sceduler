@@ -4,6 +4,35 @@ import SideNav from './SideNav';
 import Footer from './Footer';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import Rundown from "../pages/Rundown";
+import { SettingsScheduler } from "../pages/scheduler/SettingsScheduler";
+import { SlugSetup } from "../pages/scheduler/SlugSetup";
+import FilterSetup from "../pages/scheduler/FilterSetup";
+import SchedulerTable from "../pages/scheduler/SchedulerTable";
+import ClearSchedule from "../pages/scheduler/ClearSchedule";
+import ServerSetup from "../pages/scheduler/ServerSetup";
+import HourlyAdSettings from "../pages/scheduler/HourlyAdSettings";
+import DAM from "../pages/dam/DAM";
+
+import UserSetup from "../pages/UserSetup";
+import UserAccessSetup from "../pages/UserAccessSetup";
+import PackageSettings from "../pages/scheduler/PackageSettings";
+
+const COMPONENT_MAP = {
+  dashboard: <SchedulerTable />,
+  settingsscheduler: <SettingsScheduler />,
+  settingspackage: <PackageSettings />,
+  slugSetup: <SlugSetup />,
+  filterSetup: <FilterSetup />,
+  clearSchedule: <ClearSchedule />,
+  serverSetup: <ServerSetup />,
+  hourlyAdSettings: <HourlyAdSettings />,
+  rundown: <Rundown />,
+  usersetup: <UserSetup />,
+  useraccesssetup: <UserAccessSetup />,
+  dam: <DAM />,
+};
+
 const MainLayout = ({ children }) => {
 
   const location = useLocation();    // ✅ detect current route
@@ -16,6 +45,28 @@ const MainLayout = ({ children }) => {
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedTabs = JSON.parse(localStorage.getItem("app_tabs")) || [];
+    const savedActiveTab = localStorage.getItem("app_active_tab");
+  
+    if (savedTabs.length > 0) {
+      setTabs(savedTabs);
+    }
+    if (savedActiveTab) {
+      setActiveTab(savedActiveTab);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("app_tabs", JSON.stringify(tabs));
+  }, [tabs]);
+
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem("app_active_tab", activeTab);
+    }
+  }, [activeTab]);
  
   useEffect(() => {
     if (window.innerWidth >= 1024) {
@@ -23,18 +74,21 @@ const MainLayout = ({ children }) => {
     }
   }, []);
 
-  const openTab = (key, title, component) => {
+  const openTab = (key, title) => {
     setTabs(prev => {
       if (!prev.find(tab => tab.key === key)) {
-        return [...prev, { key, title, component }];
+        const updated = [...prev, { key, title }];
+        localStorage.setItem("app_tabs", JSON.stringify(updated));
+        return updated;
       }
       return prev;
     });
+  
     setActiveTab(key);
-    if (location.pathname.startsWith("/DAM") && key !== "dam") {
-      navigate("/"); // or navigate to the base route you want
-    }
+    localStorage.setItem("app_active_tab", key);
   };
+  
+  
 
   // If current route SHOULD NOT show layout, just return children directly
   if (noLayoutRoutes.includes(location.pathname)) {
@@ -59,15 +113,40 @@ const MainLayout = ({ children }) => {
       >
         <span>{tab.title}</span>
         <span
-          onClick={(e) => {
-            e.stopPropagation();
-            setTabs(prev => prev.filter(t => t.key !== tab.key));
-            if (activeTab === tab.key) setActiveTab(null);
-          }}
-          className="ml-2 text-xs hover:text-red-400"
-        >
-          ×
-        </span>
+  onClick={(e) => {
+    e.stopPropagation();
+
+    const tabIndex = tabs.findIndex(t => t.key === tab.key);
+    const updated = tabs.filter(t => t.key !== tab.key);
+    setTabs(updated);
+    localStorage.setItem("app_tabs", JSON.stringify(updated));
+
+    // If the closed tab was the active one → activate next available tab
+    if (activeTab === tab.key) {
+      let nextActive = null;
+
+      // Prefer tab to the right
+      if (updated[tabIndex]) {
+        nextActive = updated[tabIndex].key;
+      }
+      // If no right tab, choose last tab
+      else if (updated.length > 0) {
+        nextActive = updated[updated.length - 1].key;
+      }
+
+      setActiveTab(nextActive);
+      if (nextActive) {
+        localStorage.setItem("app_active_tab", nextActive);
+      } else {
+        localStorage.removeItem("app_active_tab");
+      }
+    }
+  }}
+  className="ml-2 text-xs hover:text-red-400"
+>
+  ×
+</span>
+
       </div>
     ))}
   </div>
@@ -75,8 +154,8 @@ const MainLayout = ({ children }) => {
 
         {/* ✅ Render Active Tab Content or Normal Route */}
         {activeTab
-          ? tabs.find(tab => tab.key === activeTab)?.component
-          : children}
+  ? COMPONENT_MAP[activeTab]
+  : children}
       </div>
       <Footer />
     </div>

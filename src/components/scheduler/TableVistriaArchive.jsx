@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
+import axios from "axios";
 
 const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoadingAPI ,selectedSource, setSelectedSource, filteredDataRazuna , setFilteredDataRazuna , onMoveRow, from }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
+  const API_URL = "http://172.16.9.132:8080/api/v1/package/";
   
   // default checked
   const [selectedFilter, setSelectedFilter] = useState(""); 
@@ -12,9 +14,18 @@ const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoading
 
   const [selectedRows, setSelectedRows] = useState([]);
 const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
+const [packages, setPackages] = useState([]);
+const [selectedPackageId, setSelectedPackageId] = useState(null);
 
 
- 
+const fetchPackages = async () => {
+  try {
+    const res = await axios.get(API_URL);
+    setPackages(res.data);   // API returns list of packages
+  } catch (err) {
+    console.error("Failed to fetch packages", err);
+  }
+};
 
   // Clear table when Vistria is selected
   useEffect(() => {
@@ -26,34 +37,45 @@ const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
   }, [selectedSource]);
 
  
-  const handleSavePackage = () => {
+  const handleSavePackage = async () => {
     if (!packageModal.name.trim()) return;
   
     const selectedItems = filteredDataRazuna.filter(row =>
       selectedRows.includes(row.id)
     );
   
-    const existingPackages = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
-    const pkgIndex = existingPackages.findIndex(p => p.name === packageModal.name.trim());
+    try {
+      const existingPackage = packages.find(
+        (pkg) => pkg.name === packageModal.name.trim()
+      );
   
-    if (pkgIndex >= 0) {
-      // Append new rows to existing package without duplicates
-      const existingIds = new Set(existingPackages[pkgIndex].items.map(i => i.id));
-      const newItems = selectedItems.filter(item => !existingIds.has(item.id));
-      existingPackages[pkgIndex].items.push(...newItems);
-    } else {
-      // Create new package
-      existingPackages.push({
-        name: packageModal.name.trim(),
-        items: selectedItems,
-        createdAt: new Date().toISOString()
-      });
+      if (existingPackage) {
+        // PATCH only with new items
+        await axios.patch(`${API_URL}${existingPackage.id}`, {
+          items: selectedItems,  // only the new items
+        });
+  
+        alert("Package updated successfully!");
+      } else {
+        // POST for new package
+        await axios.post(API_URL, {
+          name: packageModal.name.trim(),
+          items: selectedItems,
+        });
+  
+        alert("Package created successfully!");
+      }
+  
+      setPackageModal({ visible: false, name: "" });
+      setSelectedRows([]);
+      fetchPackages(); // reload package list
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save package");
     }
-  
-    localStorage.setItem("razuna_packages", JSON.stringify(existingPackages));
-    setPackageModal({ visible: false, name: "" });
-    setSelectedRows([]);
   };
+  
+  
   
   
 
@@ -186,7 +208,10 @@ const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
     className={`px-3 py-1 text-xs rounded 
       ${selectedRows.length > 0 ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
     disabled={selectedRows.length === 0}
-    onClick={() => setPackageModal({ visible: true, name: "" })}
+    onClick={() => {
+      setPackageModal({ visible: true, name: "" });
+      fetchPackages();   // fetch from API
+    }}
   >
     Add Package
   </button>
@@ -359,7 +384,7 @@ const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
     >
       <h3 className="font-bold mb-3 text-sm">Create / Update Package</h3>
 
-      {/* Existing packages dropdown */}
+      {/* Load packages from API */}
       <select
         className="w-full border px-2 py-1 rounded text-sm mb-2"
         value={packageModal.name}
@@ -368,16 +393,17 @@ const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
         }
       >
         <option value="">-- Select Existing Package --</option>
-        {JSON.parse(localStorage.getItem("razuna_packages") || "[]").map(
-          (pkg) => (
-            <option key={pkg.name} value={pkg.name}>
-              {pkg.name}
-            </option>
-          )
-        )}
+
+        {packages.map((pkg) => (
+          <option key={pkg.name} value={pkg.name}>
+            {pkg.name}
+          </option>
+        ))}
       </select>
 
-      <p className="text-xs text-gray-500 mb-2 text-center">Or type a new package name below</p>
+      <p className="text-xs text-gray-500 mb-2 text-center">
+        Or type a new package name below
+      </p>
 
       <input
         type="text"
@@ -407,6 +433,8 @@ const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
     </div>
   </div>
 )}
+
+
 
 
     </div>
