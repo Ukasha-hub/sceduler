@@ -181,6 +181,11 @@ function SideNav({ onOpenTab }) {
 
         <p>User Setup</p>
       </button>
+      <button className="flex gap-2 p-2 text-start w-full hover:rounded-md text-white hover:bg-gray-600  hover:text-white transition duration-200" onClick={() => onOpenTab("historylog", "History Log")}>
+      
+
+        <p>History Log</p>
+      </button>
     </li>
   
   {/*<li className="nav-item" style={{ borderLeft: "2px solid #6c757d", marginLeft: "5px", paddingLeft:"5px" }}>

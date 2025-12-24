@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import tableData from "../../services/TableData";
-import TimePicker from "react-time-picker";
+
 import 'react-time-picker/dist/TimePicker.css';
 import 'react-clock/dist/Clock.css';
+import axios from "axios";
+import dayjs from "dayjs";
+
+const API_BASE = "http://172.16.9.132:8080/api/v1/schedulerSettings/";
 
 export const SettingsScheduler = () => {
   const [formData, setFormData] = useState({
@@ -10,8 +13,8 @@ export const SettingsScheduler = () => {
     slot: "",
     fromDate: "",
     toDate: "",
-    fromTime: "00:00:00",
-    toTime: "00:00:00",
+    fromTime: "",
+    toTime: "",
     type: "",
     bpCode: "",
     rateAgreement: "",
@@ -19,13 +22,28 @@ export const SettingsScheduler = () => {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [tableDataState, setTableDataState] = useState(tableData);
+  const [tableDataState, setTableDataState] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rowId: null });
 
   const tableRef = useRef();
+
+   // Fetch data from API on component mount
+   useEffect(() => {
+    fetchSchedulerSettings();
+  }, []);
+
+  const fetchSchedulerSettings = async () => {
+    try {
+      const res = await axios.get(API_BASE);
+      setTableDataState(res.data);
+    } catch (error) {
+      console.error("Failed to fetch scheduler settings:", error);
+    }
+  };
 
   // Hide context menu on click outside
   useEffect(() => {
@@ -34,27 +52,14 @@ export const SettingsScheduler = () => {
     return () => window.removeEventListener("click", handleClick);
   }, [contextMenu]);
 
-  const handleRowClick = (item, e) => {
-    if (!selectedRows.includes(item.id)) {
-      setSelectedRows([...selectedRows, item.id]);
-    } else if (e.type === "click") {
-      setSelectedRows(selectedRows.filter((id) => id !== item.id));
+  const handleRowClick = (id) => {
+    if (selectedRows.includes(id)) {
+      setSelectedRows(selectedRows.filter((rowId) => rowId !== id));
+    } else {
+      setSelectedRows([...selectedRows, id]);
     }
-
-    setFormData({
-      slot: item.size,
-      fromDate: item.startDate,
-      toDate: item.endDate,
-      fromTime: item.startTime,
-      toTime: item.endTime,
-      adLimit: "",
-      type: "",
-      bpCode: "",
-      rateAgreement: "",
-      timeBand: "",
-    });
-    setIsEditing(true);
   };
+  
 
   const handleSelectAll = () => {
     if (selectedRows.length === tableDataState.length) {
@@ -82,18 +87,143 @@ export const SettingsScheduler = () => {
     }
   };
 
-  const handleDeleteRows = () => {
+  const handleDeleteRows = async () => {
+    try {
+      // Delete each selected row via API
+      await Promise.all(
+        selectedRows.map((id) => axios.delete(`${API_BASE}${id}`))
+      );
+  
+      // Update local state
+      setTableDataState(tableDataState.filter((row) => !selectedRows.includes(row.id)));
+      setSelectedRows([]);
+      setContextMenu({ ...contextMenu, visible: false });
+  
+      alert("Row(s) deleted!");
+    } catch (error) {
+      console.error("Failed to delete row(s):", error);
+      alert("Failed to delete row(s)!");
+    }
+  };
+
+  const handleEditRow = (rowId) => {
+    const row = tableDataState.find((r) => r.id === rowId);
+    if (!row) return;
+  
+    setFormData({
+      slot: row.slot,
+      type: row.Type,
+      bpCode: row.bp_code || "",
+      rateAgreement: row.rate_agreement || "",
+      timeBand: row.time_band || "",
+      fromDate: row.from_date,
+      toDate: row.to_date,
+      fromTime: row.from_time,
+      toTime: row.to_time,
+      adLimit: row.ad_limit,
+    });
+    setIsEditing(true);
+    setSelectedRows([rowId]);
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  const formatTime = (time) => {
+    if (!time) return null;
+    return time.length === 5 ? time + ":00" : time; // "HH:mm" → "HH:mm:00"
+  };
+
+  // --- Inside your component ---
+const handleAddRow = async () => {
+  try {
+    await axios.post(API_BASE, {
+      slot: formData.slot,
+      Type: formData.type,
+      bp_code: formData.bpCode || null,
+      rate_agreement: formData.rateAgreement || null,
+      time_band: formData.timeBand || null,
+      from_date: dayjs(formData.fromDate).format("YYYY-MM-DD"),
+      to_date: dayjs(formData.toDate).format("YYYY-MM-DD"),
+      from_time: formatTime(formData.fromTime),
+      to_time: formatTime(formData.toTime),
+      ad_limit: parseFloat(formData.adLimit),
+    });
+    alert("Row added!");
+    fetchSchedulerSettings();
+    resetForm();
+  } catch (error) {
+    console.error("Failed to add row:", error);
+  }
+};
+
+const handleUpdateRow = async () => {
+  try {
+    await axios.put(`${API_BASE}${selectedRows[0]}`, {
+      slot: formData.slot,
+      Type: formData.type,
+      bp_code: formData.bpCode || null,
+      rate_agreement: formData.rateAgreement || null,
+      time_band: formData.timeBand || null,
+      from_date: dayjs(formData.fromDate).format("YYYY-MM-DD"),
+      to_date: dayjs(formData.toDate).format("YYYY-MM-DD"),
+      from_time: formatTime(formData.fromTime),
+      to_time: formatTime(formData.toTime),
+      ad_limit: parseFloat(formData.adLimit),
+    });
+    alert("Row updated!");
+    fetchSchedulerSettings();
+    resetForm();
+  } catch (error) {
+    console.error("Failed to update row:", error);
+  }
+};
+
+const resetForm = () => {
+  setFormData({
+    adLimit: "",
+    slot: "",
+    fromDate: "",
+    toDate: "",
+    fromTime: "",
+    toTime: "",
+    type: "",
+    bpCode: "",
+    rateAgreement: "",
+    timeBand: "",
+  });
+  setIsEditing(false);
+  setSelectedRows([]);
+};
+
+// --- Updated form submit ---
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+  if (!timeRegex.test(formData.fromTime) || !timeRegex.test(formData.toTime)) {
+    alert("Please enter time in HH:mm:ss format");
+    return;
+  }
+  if (isEditing) {
+    handleUpdateRow();
+  } else {
+    handleAddRow();
+  }
+};
+  
+const handleConfirmDelete = async () => {
+  try {
+    await Promise.all(
+      selectedRows.map((id) => axios.delete(`${API_BASE}${id}`))
+    );
+
     setTableDataState(tableDataState.filter((row) => !selectedRows.includes(row.id)));
     setSelectedRows([]);
     setContextMenu({ ...contextMenu, visible: false });
-    alert("Row(s) deleted!"); // replace with toast if needed
-  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Submitted:", formData);
-  };
-
+  } catch (error) {
+    console.error("Failed to delete row(s):", error);
+  }
+  setShowDeleteModal(false);
+};
 
   
   const FloatingSelect = ({ label, value, onChange, children }) => (
@@ -101,6 +231,7 @@ export const SettingsScheduler = () => {
       <select
         value={value}
         onChange={onChange}
+        required
         className="
           peer block w-full  rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9 bg-white
           focus:border-blue-500 focus:outline-none
@@ -146,18 +277,24 @@ export const SettingsScheduler = () => {
                         onChange={handleSelectAll}
                       />
                     </th>
-                    <th>ID</th>
-                    <th>Name</th>
+                    
                     <th>Slot</th>
+                    <th>Type</th>
+                    <th>BP Code</th>
+                    <th>Rate Agreement</th>
+                    <th>Time Band</th>
                     <th>Start Date</th>
                     <th>End Date</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Ad Limit</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tableDataState.map((item) => (
                     <tr
                       key={item.id}
-                      onClick={(e) => handleRowClick(item, e)}
+                      onClick={() => handleRowClick(item.id)}
                       onContextMenu={(e) => handleRightClick(e, item.id)}
                       className={`cursor-pointer hover:bg-gray-100 ${
                         selectedRows.includes(item.id) ? "bg-gray-200" : ""
@@ -177,11 +314,17 @@ export const SettingsScheduler = () => {
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
-                      <td>{item.id}</td>
-                      <td>{item.name}</td>
-                      <td>{item.size}</td>
-                      <td>{item.startDate}</td>
-                      <td>{item.endDate}</td>
+                      
+                      <td>{item.slot}</td>
+                      <td>{item.Type}</td>
+                      <td>{item.bp_code}</td>
+                      <td>{item.rate_agreement}</td>
+                      <td>{item.time_band}</td>
+                      <td>{item.from_date}</td>
+                      <td>{item.to_date}</td>
+                      <td>{item.from_time}</td>
+                      <td>{item.to_time}</td>
+                      <td>{item.ad_limit}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -190,25 +333,34 @@ export const SettingsScheduler = () => {
               {/* Context Menu */}
               {contextMenu.visible && (
                 <div
-                  style={{
-                    position: "absolute",
-                    top: contextMenu.y,
-                    left: contextMenu.x,
-                    backgroundColor: "white",
-                    border: "1px solid #ccc",
-                    boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
-                    zIndex: 1000,
-                  }}
-                >
-                  <ul className="p-1 m-0 list-none">
-                    <li
-                      className="px-4 py-1 hover:bg-red-100 cursor-pointer text-red-600"
-                      onClick={handleDeleteRows}
-                    >
-                      Delete
-                    </li>
-                  </ul>
-                </div>
+                style={{
+                  position: "absolute",
+                  top: contextMenu.y,
+                  left: contextMenu.x,
+                  backgroundColor: "white",
+                  border: "1px solid #ccc",
+                  boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+                  zIndex: 1000,
+                }}
+              >
+                <ul className="p-1 m-0 list-none">
+                  <li
+                    className="px-4 py-1 hover:bg-blue-100 cursor-pointer text-blue-600"
+                    onClick={() => handleEditRow(contextMenu.rowId)}
+
+                  >
+                    Update
+                  </li>
+              
+                  <li
+                    className="px-4 py-1 hover:bg-red-100 cursor-pointer text-red-600"
+                    onClick={() => setShowDeleteModal(true)}
+                  >
+                    Delete
+                  </li>
+                </ul>
+              </div>
+              
               )}
             </div>
           </div>
@@ -231,10 +383,11 @@ export const SettingsScheduler = () => {
           label="Slot"
           value={formData.slot}
           onChange={(e) => setFormData({ ...formData, slot: e.target.value })}
+          required
         >
-          <option value="Slot 1">Slot 1</option>
-          <option value="Slot 2">Slot 2</option>
-          <option value="Slot 3">Slot 3</option>
+          <option value="pick_hour">Pick Hour</option>
+          <option value="off_pick_hour">OFF Pick Hour</option>
+        
         </FloatingSelect>
         </div>
         <div className="w-1/2">
@@ -242,6 +395,7 @@ export const SettingsScheduler = () => {
           label="Type"
           value={formData.type}
           onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+          required
         >
           <option value="24 Hour">24 Hour</option>
           <option value="PGM Wise">PGM Wise</option>
@@ -256,6 +410,8 @@ export const SettingsScheduler = () => {
         <input
           type="text"
           placeholder=" "
+          value={formData.bpCode}
+  onChange={(e) => setFormData({ ...formData, bpCode: e.target.value })}
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
             focus:border-blue-500 focus:outline-none
@@ -277,6 +433,8 @@ export const SettingsScheduler = () => {
         <input
           type="text"
           placeholder=" "
+          value={formData.rateAgreement}
+  onChange={(e) => setFormData({ ...formData, rateAgreement: e.target.value })}
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
             focus:border-blue-500 focus:outline-none
@@ -300,6 +458,8 @@ export const SettingsScheduler = () => {
         <input
           type="text"
           placeholder=" "
+          value={formData.timeBand}
+          onChange={(e) => setFormData({ ...formData, timeBand: e.target.value })}
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
             focus:border-blue-500 focus:outline-none
@@ -325,6 +485,9 @@ export const SettingsScheduler = () => {
         <input
           type="date"
           placeholder=" "
+          value={formData.fromDate}
+          onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })}
+          required
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
             focus:border-blue-500 focus:outline-none
@@ -347,6 +510,9 @@ export const SettingsScheduler = () => {
         <input
           type="date"
           placeholder=" "
+          value={formData.toDate}
+          onChange={(e) => setFormData({ ...formData, toDate: e.target.value })}
+          required
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
             focus:border-blue-500 focus:outline-none
@@ -368,53 +534,63 @@ export const SettingsScheduler = () => {
 
       {/* TIME PICKER FLOATING */}
       <div className="flex flex-row gap-5 mt-2 w-full">
-        <div className="relative mb-4 w-1/2">
-          <div className="peer h-9 block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs"></div>
-          <label className="
-            absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75 bg-white px-1
-            text-gray-500 transition-all duration-200
-          ">
-            From Time
-          </label>
+      <div className="relative mb-4 w-1/2">
+  <input
+    type="text"
+    placeholder="HH:MM:SS"
+    value={formData.fromTime}
+    onChange={(e) => setFormData({ ...formData, fromTime: e.target.value })}
+    required
+    className="
+      peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
+      focus:border-blue-500 focus:outline-none
+    "
+    maxLength={8}
+  />
+  <label
+    className="
+      absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+      bg-white px-1 text-gray-500 transition-all duration-200
+    "
+  >
+    From Time
+  </label>
+</div>
 
-          <div className="absolute inset-0 flex items-center px-2 pt-3">
-            <TimePicker
-              onChange={(value) => setFormData({ ...formData, fromTime: value })}
-              value={formData.fromTime}
-              format="HH:mm:ss"
-              disableClock={true}
-              clearIcon={null}
-              className="w-full text-xs"
-            />
-          </div>
-        </div>
-
-        <div className="relative mb-4 w-1/2">
-          <div className="peer h-9 block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs"></div>
-          <label className="
-            absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75 bg-white px-1
-            text-gray-500 transition-all duration-200
-          ">
-            To Time
-          </label>
-
-          <div className="absolute inset-0 flex items-center px-2 pt-3">
-            <TimePicker
-              onChange={(value) => setFormData({ ...formData, toTime: value })}
-              value={formData.toTime}
-              format="HH:mm:ss"
-              disableClock={true}
-              clearIcon={null}
-              className="w-full text-xs"
-            />
-          </div>
-        </div>
+<div className="relative mb-4 w-1/2">
+  <input
+    type="text"
+    placeholder="HH:MM:SS"
+    value={formData.toTime}
+    onChange={(e) => setFormData({ ...formData, toTime: e.target.value })}
+    required
+    className="
+      peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
+      focus:border-blue-500 focus:outline-none
+    "
+    maxLength={8}
+  />
+  <label
+    className="
+      absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+      bg-white px-1 text-gray-500 transition-all duration-200
+    "
+  >
+    To Time
+  </label>
+</div>
       </div>
 
       <div className="mb-4 relative">
         <input
-          type="text"
+          type="number"
+          step="0.01"
           placeholder=" "
+          value={formData.adLimit}
+          onChange={(e) =>
+            setFormData({ ...formData, adLimit: e.target.value === "" ? "" : parseFloat(e.target.value) })
+          }
+          required
           className="
             peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-9
             focus:border-blue-500 focus:outline-none
@@ -436,32 +612,53 @@ export const SettingsScheduler = () => {
     </div>
 
     <div className="card-footer flex flex-row gap-2">
-      <button type="submit" className="h-7 border-2 rounded-md  border-blue-400 btn-primary btn-sm w-full">
-        {isEditing ? "Update" : "Add"}
-      </button>
-      <button
-        type="button"
-        className="h-7 border-2 rounded-md  border-gray-400 btn-secondary w-1/2 ml-1"
-        onClick={() =>
-          setFormData({
-            adLimit: "",
-            slot: "",
-            fromDate: "",
-            toDate: "",
-            fromTime: "00:00:00",
-            toTime: "00:00:00",
-            type: "",
-            bpCode: "",
-            rateAgreement: "",
-            timeBand: "",
-          })
-        }
-      >
-        Reset
-      </button>
-    </div>
+  <button
+    type="submit"
+    className="h-7 border-2 rounded-md border-blue-400 btn-primary btn-sm w-full"
+  >
+    {isEditing ? "Update" : "Add"}
+  </button>
+
+  {isEditing && (
+    <button
+      type="button"
+      className="h-7 border-2 rounded-md border-gray-400 btn-secondary w-1/2 ml-1"
+      onClick={resetForm}
+    >
+      Reset
+    </button>
+  )}
+</div>
+
   </form>
 </div>
+{showDeleteModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="bg-white rounded shadow-lg p-5 w-80">
+      <h2 className="text-sm font-semibold mb-3">Are you sure?</h2>
+      <p className="text-xs mb-4">
+        Do you really want to delete {selectedRows.length} selected row(s)?
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowDeleteModal(false)}
+          className="px-3 py-1 text-xs bg-gray-200 rounded"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleConfirmDelete}
+          className="px-3 py-1 text-xs bg-red-600 text-white rounded"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

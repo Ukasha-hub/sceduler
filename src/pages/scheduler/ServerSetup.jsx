@@ -255,7 +255,11 @@ const ServerSetup = () => {
                 placeholder=" "
                 className="peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-8 focus:border-blue-500 focus:outline-none"
               />
-              <label className="absolute left-2 top-2 bg-white px-1 text-gray-500 transition-all peer-focus:-translate-y-3 peer-focus:scale-75 peer-placeholder-shown:scale-100 peer-placeholder-shown:top-2 peer-focus:text-blue-500">
+              <label className="absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+            bg-white px-1 text-gray-500 transition-all duration-200
+            peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+            peer-placeholder-shown:scale-100
+            peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500">
                 Server
               </label>
             </div>
@@ -271,7 +275,11 @@ const ServerSetup = () => {
                 placeholder=" "
                 className="peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-8 focus:border-blue-500 focus:outline-none"
               />
-              <label className="absolute left-2 top-2 bg-white px-1 text-gray-500 transition-all peer-focus:-translate-y-3 peer-focus:scale-75 peer-placeholder-shown:scale-100 peer-placeholder-shown:top-2 peer-focus:text-blue-500">
+              <label className="absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+            bg-white px-1 text-gray-500 transition-all duration-200
+            peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+            peer-placeholder-shown:scale-100
+            peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500">
                 IP 1
               </label>
             </div>
@@ -287,7 +295,11 @@ const ServerSetup = () => {
                 placeholder=" "
                 className="peer block w-full rounded border border-gray-300 px-2 pt-3 pb-1 text-xs h-8 focus:border-blue-500 focus:outline-none"
               />
-              <label className="absolute left-2 top-2 bg-white px-1 text-gray-500 transition-all peer-focus:-translate-y-3 peer-focus:scale-75 peer-placeholder-shown:scale-100 peer-placeholder-shown:top-2 peer-focus:text-blue-500">
+              <label className="absolute left-2 top-2 z-10 origin-left -translate-y-3 scale-75
+            bg-white px-1 text-gray-500 transition-all duration-200
+            peer-placeholder-shown:top-2 peer-placeholder-shown:translate-y-0
+            peer-placeholder-shown:scale-100
+            peer-focus:-translate-y-3 peer-focus:scale-75 peer-focus:text-blue-500">
                 IP 2
               </label>
             </div>

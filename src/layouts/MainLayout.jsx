@@ -17,6 +17,7 @@ import DAM from "../pages/dam/DAM";
 import UserSetup from "../pages/UserSetup";
 import UserAccessSetup from "../pages/UserAccessSetup";
 import PackageSettings from "../pages/scheduler/PackageSettings";
+import HistoryLog from '../pages/scheduler/HistoryLog';
 
 const COMPONENT_MAP = {
   dashboard: <SchedulerTable />,
@@ -31,6 +32,7 @@ const COMPONENT_MAP = {
   usersetup: <UserSetup />,
   useraccesssetup: <UserAccessSetup />,
   dam: <DAM />,
+  historylog: <HistoryLog></HistoryLog>
 };
 
 const MainLayout = ({ children }) => {

@@ -1172,31 +1172,35 @@ useEffect(() => {
   fetchHourlyInterval();
 }, []);
 
-const parseTimeToMinutes = (timeStr) => {
+const parseTimeToSeconds = (timeStr) => {
   const [h, m, s] = timeStr.split(":").map(Number);
-  return h * 60 + m + Math.floor(s / 60);
+  return h * 3600 + m * 60 + s;
 };
 
 // Generate slots using HH:mm:ss interval
 const generateSlots = (intervalTimeStr) => {
   const slots = [];
-  const totalMinutes = 24 * 60;
-  const interval = parseTimeToMinutes(intervalTimeStr);
+  const totalSeconds = 24 * 3600; // full day
+  const intervalSec = parseTimeToSeconds(intervalTimeStr);
 
-  for (let start = 0; start < totalMinutes; start += interval) {
-    const end = Math.min(start + interval - 1, totalMinutes - 1);
+  for (let start = 0; start < totalSeconds; start += intervalSec) {
+    const end = Math.min(start + intervalSec - 1, totalSeconds - 1);
 
-    const startH = String(Math.floor(start / 60)).padStart(2, "0");
-    const startM = String(start % 60).padStart(2, "0");
+    // Convert back to HH:MM:SS
+    const formatTime = (sec) => {
+      const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+      const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
+      const s = String(sec % 60).padStart(2, "0");
+      return `${h}:${m}:${s}`;
+    };
 
-    const endH = String(Math.floor(end / 60)).padStart(2, "0");
-    const endM = String(end % 60).padStart(2, "0");
-
-    slots.push(`${startH}:${startM} - ${endH}:${endM}`);
+    slots.push(`${formatTime(start)} - ${formatTime(end)}`);
   }
 
   return slots;
 };
+
+
 
 //console.log("metadata:",metaData)
   return (
