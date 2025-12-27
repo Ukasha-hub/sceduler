@@ -52,6 +52,9 @@ useEffect(() => {
   
     let totalFrames = ((prevHH * 3600 + prevMM * 60 + prevSS) * FPS + prevFF) +
                       ((durH * 3600 + durM * 60 + durS) * FPS + durF);
+    const totalTimelineFrames = totalFrames;
+
+    pendingRow.totalTimelineFrames = totalTimelineFrames;
   
     const finalHours = Math.floor(totalFrames / (FPS * 3600));
     totalFrames %= FPS * 3600;
@@ -75,7 +78,11 @@ useEffect(() => {
       `${String(finalMinutes).padStart(2, "0")}:` +
       `${String(finalSeconds).padStart(2, "0")}:` +
       `${String(finalFrames).padStart(2, "0")}`;
+    console.log("final end time", finalEndTime)  
   }
+
+  const timeToTotalFrames = (hh, mm, ss, ff, fps = 25) =>
+    ((hh * 3600 + mm * 60 + ss) * fps) + ff;
 
  const handleSubmit = () => {
   const { name, type, duration } = formInputs;
@@ -84,6 +91,30 @@ useEffect(() => {
     alert("Please fill all mandatory fields: Name, Type, and Duration!");
     return;
   }
+
+    // ⛔ 24-hour validation
+    const FPS = 25;
+  const MAX_FRAMES = 24 * 3600 * FPS;
+
+ // ---- RE-CALCULATE TOTAL FRAMES SAFELY ----
+ const [prevDateStr, prevTimeStr] = (pendingRow?.prevEndTime || "1970-01-01 00:00:00").split(" ");
+ const [prevHH, prevMM, prevSS] = prevTimeStr.split(":").map(v => parseInt(v, 10) || 0);
+
+ const prevFF =
+   pendingRow?.prevTimePeriod?.frameRate ??
+   (typeof pendingRow?.prevFrameRate === "number" ? pendingRow.prevFrameRate % FPS : 0);
+
+ const [durH, durM, durS, durF] = duration.split(":").map(v => parseInt(v, 10) || 0);
+
+ const totalTimelineFrames =
+   ((prevHH * 3600 + prevMM * 60 + prevSS) * FPS + prevFF) +
+   ((durH * 3600 + durM * 60 + durS) * FPS + durF);
+
+ // ⛔ HARD BLOCK
+ if (totalTimelineFrames >= MAX_FRAMES) {
+   alert("⏰ Playlist time exceeds 24 hours. Cannot add this asset.");
+   return;
+ }
 
   onConfirm(formInputs); // call parent handler to add row
   onClose();             // close modal ✅

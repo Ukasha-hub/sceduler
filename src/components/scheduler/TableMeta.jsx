@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import UpdateSchedulerModal from "../Modal/scheduler/UpdateSchedulerModal";
 import { ToastContainer, toast } from 'react-toastify';
+import axios from "axios";
 
 import AddNewRowModal from "../Modal/scheduler/AddNewRowModal";
 
@@ -50,6 +51,7 @@ const [showAddNewModal, setShowAddNewModal] = useState(false);
 const [showImportPackageModal, setShowImportPackageModal] = useState(false);
 const [availablePackages, setAvailablePackages] = useState([]);
 const [selectedPackageName, setSelectedPackageName] = useState("");
+const [typeColors, setTypeColors] = useState({});
 
 useEffect(() => {
   const stored = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
@@ -125,16 +127,22 @@ const formatTimeWithFrame = (tp) => {
   return `${pad(tp.hour)}:${pad(tp.minute)}:${pad(tp.second)}:${pad(tp.frame)}`;
 };
 
-const typeColors = {
-   PGM:  "#BFDBFE",      // bg-blue-100
-    COM:  "#FEF3C7",      // bg-yellow-100
-   FILLER:  "#E9D5FF",   // bg-purple-100
-     COM_GFX:  "#FBCFE8",  // bg-pink-100
-   GFX:  "#FFD7AA",     // bg-orange-100
-     PROMO:  "#CCFBF1",    // bg-teal-100
-    TEASER:  "#C7D2FE", 
-  // add more types here
-};
+useEffect(() => {
+  const fetchFilters = async () => {
+    try {
+      const res = await axios.get("http://172.16.9.132:8080/api/v1/filters/");
+      const colorMap = {};
+      res.data.forEach(item => {
+        colorMap[item.type] = item.color;
+      });
+      setTypeColors(colorMap);
+    } catch (err) {
+      console.error("Failed to load filter colors", err);
+    }
+  };
+
+  fetchFilters();
+}, []);
 
 
   const handleDrop = (e) => {

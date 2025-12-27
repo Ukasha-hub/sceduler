@@ -17,6 +17,8 @@ const [packageModal, setPackageModal] = useState({ visible: false, name: "" });
 const [packages, setPackages] = useState([]);
 const [selectedPackageId, setSelectedPackageId] = useState(null);
 
+const [typeColors, setTypeColors] = useState({});
+
 
 const fetchPackages = async () => {
   try {
@@ -26,6 +28,24 @@ const fetchPackages = async () => {
     console.error("Failed to fetch packages", err);
   }
 };
+
+//set row color
+useEffect(() => {
+  const fetchFilters = async () => {
+    try {
+      const res = await axios.get("http://172.16.9.132:8080/api/v1/filters/");
+      const colorMap = {};
+      res.data.forEach(item => {
+        colorMap[item.type] = item.color;
+      });
+      setTypeColors(colorMap);
+    } catch (err) {
+      console.error("Failed to load filter colors", err);
+    }
+  };
+
+  fetchFilters();
+}, []);
 
   // Clear table when Vistria is selected
   useEffect(() => {
@@ -127,18 +147,7 @@ const fetchPackages = async () => {
       );
     }, [searchTerm, selectedFilter, RazunaData]);
 
-    const getRowColor = (type) => {
-      switch (type) {
-        case "PGM": return "bg-blue-100";
-        case "COM": return "bg-yellow-100";
-        case "FILLER": return "bg-purple-100";
-        case "COM-GFX": return "bg-pink-100";
-        case "GFX": return "bg-orange-100";
-        case "PROMO": return "bg-teal-100";
-        case "TEASER": return "bg-indigo-100";
-        default: return "bg-gray-100"; // fallback
-      }
-    };
+   
 
     const handleContextMenu = (e, row) => {
       e.preventDefault();
@@ -282,7 +291,8 @@ const fetchPackages = async () => {
                     draggable
                     onDragStart={(e) => handleDragStart(e, row)}
                     onContextMenu={(e) => handleContextMenu(e, row)}
-                    className={`border-b hover:bg-gray-50 cursor-move ${getRowColor(row.type)}`}
+                    style={{ backgroundColor: typeColors[row.type] || "#f3f4f6" }}
+                    className={`border-b hover:bg-gray-50 cursor-move `}
                   >
                      <td className="px-2 py-2">
                         <input
