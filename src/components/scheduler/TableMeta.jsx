@@ -29,7 +29,8 @@ const TableMeta = ( {data, onMoveRow, from,
   searchValue = '',
   serverSide = true,
   getRowClassName, // New prop for custom row classes
-  fillHeight = true  }) => {
+  fillHeight = true,
+  selectedDate  }) => {
 
     const [localSearchValue, setLocalSearchValue] = useState(searchValue);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -37,7 +38,7 @@ const TableMeta = ( {data, onMoveRow, from,
     const containerRef = useRef(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredData, setFilteredData] = useState(data);
-//console.log("filteredData", filteredData)
+console.log("filteredData", data)
 const [contextMenu, setContextMenu] = useState(null);
 const [selectedRow, setSelectedRow] = useState(null);
 
@@ -54,15 +55,24 @@ const [selectedPackageName, setSelectedPackageName] = useState("");
 const [typeColors, setTypeColors] = useState({});
 
 useEffect(() => {
-  const stored = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
-  setAvailablePackages(stored);
+  const fetchPackages = async () => {
+    try {
+      const res = await axios.get("http://172.16.9.132:8080/api/v1/package/");
+      setAvailablePackages(res.data || []);
+    } catch (err) {
+      console.error("Failed to load packages", err);
+      toast.error("Failed to load packages");
+    }
+  };
+
+  fetchPackages();
 }, []);
 
 useEffect(() => {
-  console.log("data changed:", data);
+  setSelectedRows([]);
 }, [data]);
 
-//console.log("dataDATA",data)
+console.log("dataDATA",data)
 
 const handleAddNewConfirm = (newRowData) => {
   const newRow = {
@@ -159,7 +169,8 @@ useEffect(() => {
 
   if (tr && tr.dataset && tr.dataset.rowId) {
     const targetId = tr.dataset.rowId;
-    const idx = filteredData.findIndex(r => String(r.id) === String(targetId));
+    const idx = data.findIndex(r => String(r.id) === String(targetId));
+insertIndex = idx >= 0 ? idx + 1 : data.length;
     if (idx >= 0) insertIndex = idx + 1;
   }
 
@@ -241,7 +252,7 @@ useEffect(() => {
       }
     }, [currentPage, onPageChange]);
   
-    const totalPages = Math.ceil(totalRecords / pageSize);
+    const totalPages = totalRecords;
     const startRecord = ((currentPage - 1) * pageSize) + 1;
     const endRecord = Math.min(currentPage * pageSize, totalRecords);
   
@@ -564,9 +575,10 @@ useEffect(() => {
 const handleImportPackage = (packageName) => {
   if (!packageName) return;
 
-  const stored = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
-  const pkg = stored.find((p) => p.name === packageName);
+  const pkg = availablePackages.find(p => p.name === packageName);
   if (!pkg) return;
+
+ // console.log("pkg", pkg)
 
   const insertAfterId = selectedRow?.id || null;
 
@@ -579,30 +591,51 @@ const handleImportPackage = (packageName) => {
       if (idx >= 0) insertIndex = idx + 1;
     }
 
-    const newRows = pkg.items.map((item, index) => ({
-      id: item.id,
+    const newRows = pkg.items.map(item => ({
+      id: Date.now() + Math.random(),
       name: item.name,
       type: item.type,
       duration: item.duration,
-      startTime: "",  
-      endTime: "",
+      startTime: `${selectedDate} 00:00:00`,
+      endTime: `${selectedDate} 00:00:00`,
       prevTimePeriod: { hour: 0, minute: 0, second: 0, frameRate: 0 },
-      timePeriod: { hour: 0, minute: 0, second: 0, frameRate: item.fps || 25 },
+      prevEndTime: `${selectedDate} 00:00:00`,
+      timePeriod: {
+        hour: 0,
+        minute: 0,
+        second: 0,
+        frameRate: item.fps || 25,
+      },
     }));
-
+     console.log("new rows", newRows)
     updated.splice(insertIndex, 0, ...newRows);
-    //setFilteredData(f => {
-    //  const filtered = [...f];
-     // filtered.splice(insertIndex, 0, ...newRows);
-     // return filtered;
-   // });
-
+    console.log("new rows added", updated)
     return recalcSchedule ? recalcSchedule(updated) : updated;
   });
 
   setShowImportPackageModal(false);
 };
 
+const isPastOrNow = (startTime) => {
+  if (!startTime) return false;
+  const rowTime = new Date(startTime.replace(" ", "T"));
+  const now = new Date();
+  return rowTime <= now;
+};
+
+const isFutureRow = selectedRow && !isPastOrNow(selectedRow.startTime);
+
+const selectedRowLocked = selectedRow && isPastOrNow(selectedRow.startTime);
+const anySelectedRowLocked = selectedRows.some(id => {
+  const row =
+    data.find(r => r.id === id) ||
+    filteredData.find(r => r.id === id);
+
+  return row && isPastOrNow(row.startTime);
+});
+
+const isTableEmpty = filteredData.length === 0;
+const hasSelection = selectedRows.length > 0 || selectedRow;
 
   
     return (
@@ -650,7 +683,9 @@ const handleImportPackage = (packageName) => {
   className="datatable-table table table-hover min-w-[300px]"
    onContextMenu={(e) => {
        e.preventDefault();
-       if (filteredData.length > 0) return; // rows already handle right-click
+       if (!isTableEmpty) return;
+
+       setSelectedRows([]);
 
        // Empty table right-click → show context menu
        setSelectedRow(null); // no actual row selected
@@ -693,14 +728,14 @@ const handleImportPackage = (packageName) => {
       </td>
     </tr>
   ) : (
-    filteredData.map((row) => (
+    data.map((row) => (
      
       <tr
         key={row.id}
         data-row-id={row.id}
         draggable
         onDragStart={(e) => handleDragStart(e, row)}
-        onClick={() => handleRowSelect(row.id)} // Left click select
+        onClick={() => {handleRowSelect(row.id); setContextMenu(null); }} // Left click select
         onContextMenu={(e) => {
          // console.log("row", row)
           e.preventDefault();
@@ -759,7 +794,7 @@ const handleImportPackage = (packageName) => {
     onMouseLeave={() => setContextMenu(null)}
   >
     {/* Only show Update if one row is selected */}
-    {selectedRows.length === 1 && selectedRow && (
+    {selectedRows.length === 1 && selectedRow &&  !selectedRowLocked &&(
       <button
         className="block w-full text-left px-4 py-2 hover:bg-gray-100"
         onClick={() => {
@@ -792,7 +827,14 @@ const handleImportPackage = (packageName) => {
       </button>
     )}
 
-    {/* Always show Add File */}
+{(
+  // Case 1: empty table
+  (isTableEmpty && !hasSelection) ||
+
+  // Case 2: future row selected
+  (selectedRow && isFutureRow )
+) && (
+  <>
     <button
       className="block w-full text-left px-4 py-2 hover:bg-gray-100"
       onClick={() => {
@@ -811,8 +853,6 @@ const handleImportPackage = (packageName) => {
     <button
   className="block w-full text-left px-4 py-2 hover:bg-gray-100"
   onClick={() => {
-    const stored = JSON.parse(localStorage.getItem("razuna_packages") || "[]");
-    setAvailablePackages(stored);
     setSelectedPackageName("");
     setShowImportPackageModal(true);
     setContextMenu(null);
@@ -820,7 +860,8 @@ const handleImportPackage = (packageName) => {
 >
   Import Package
 </button>
-
+</>
+)}
     {/* Copy / Paste / Delete only if there are selected rows */}
     {selectedRows.length > 0 && (
       <>
@@ -842,7 +883,8 @@ const handleImportPackage = (packageName) => {
             Paste
           </button>
         )}
-
+        
+        {selectedRows.length > 0 && !anySelectedRowLocked && (
         <button
           className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600"
           onClick={() => {
@@ -865,9 +907,7 @@ const handleImportPackage = (packageName) => {
             setFilteredData(prev => prev.filter(r => !selectedRows.includes(r.id)));
 
             // Remove parent rows using onDeleteRow
-            parentRowsToDelete.forEach(row => {
-              if (onDeleteRow) onDeleteRow(row.id);
-            });
+            if (onDeleteRow) onDeleteRow(selectedRows);
 
             setSelectedRows([]);
             setContextMenu(null);
@@ -875,6 +915,7 @@ const handleImportPackage = (packageName) => {
         >
           Delete
         </button>
+        )}
       </>
     )}
   </div>
@@ -952,7 +993,8 @@ const handleImportPackage = (packageName) => {
 
 </div>
 
-{/* Footer stays under the table */}
+{/* Footer stays under the table 
+
 <div className="datatable-footer bg-white border-t mt-2 p-2">
   <div className="datatable-info">
     Showing {totalRecords > 0 ? startRecord : 0} to {endRecord} of {totalRecords} entries
@@ -966,6 +1008,9 @@ const handleImportPackage = (packageName) => {
     </nav>
   )}
 </div>
+
+*/}
+
   
       
       </div>

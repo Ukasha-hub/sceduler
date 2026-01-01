@@ -9,7 +9,7 @@ const AddDataModal = ({
   pendingRow
 }) => {
   if (!show) return null; // Don't render if not visible
- // console.log("PENDING ROW",pendingRow.prevEndTime)
+  console.log("PENDING ROW from modal", pendingRow)
   const isFormValid = (() => {
     const currentType = formInputs.type || pendingRow?.type || ""; // ✅ normalize
   
@@ -23,13 +23,22 @@ const AddDataModal = ({
     return true;
   })();
 
+  const needsJustBefore =
+  pendingRow?.type === "COM" &&
+  pendingRow?.prevRowType !== "PGM";
+
+const isSelectSpotValid =
+  !needsJustBefore || formInputs.selectSpot === "Just Before";
+
   const frame = pendingRow?.timePeriod?.frame ?? 0;
-  console.log("formInputs",formInputs)
-  console.log("pending row", pendingRow)
+  //console.log("formInputs",formInputs)
+  //console.log("pending row", pendingRow)
   // ---- Compute Final End Time + Correct Date ----
 let finalEndTime = "00:00:00:00";
 let finalEndDate = pendingRow?.prevEndTime?.split(" ")[0] || ""; // e.g. "2025-10-17"
 
+console.log("prevEndTimefrommodal", pendingRow.prevEndTime)
+console.log("finalEndDate", finalEndDate)
 if (pendingRow) {
   const FPS = 25;
   const [prevDateStr, prevTimeStr] = (pendingRow.prevEndTime || "1970-01-01 00:00:00").split(" ");
@@ -359,6 +368,11 @@ if (pendingRow) {
                   <option value="Just Before">Just Before</option>
                   <option value="Super">Super</option>
                 </select>
+                {needsJustBefore && !isSelectSpotValid && (
+                  <p className="text-red-500 text-xs mt-1">
+                    Select Spot must be <b>Just Before</b> for COM when previous type is not PGM
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -370,7 +384,7 @@ if (pendingRow) {
             <button
   className="btn btn-primary btn-sm"
   onClick={onConfirm}
-  disabled={!isFormValid}
+  disabled={!isFormValid || !isSelectSpotValid}
 >
   Add
 </button>

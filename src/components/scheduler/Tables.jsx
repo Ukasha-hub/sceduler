@@ -27,6 +27,11 @@ const Tables = () => {
    const [selectedSource, setSelectedSource] = useState('Razuna'); 
    const [filteredDataRazuna, setFilteredDataRazuna] = useState(RazunaData);
 
+   const getToday = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  };
+
   // Notification state
   const [notification, setNotification] = useState({ show: false, type: '', message: '' });
 
@@ -90,7 +95,7 @@ const Tables = () => {
                   asset_id: video.id,
                   file_url: `http://172.31.10.55:8080/razuna/raz2/dam/index.cfm?fa=c.serve_file&file_id=${video.id}&type=vid`,
                   duration_seconds: Math.floor(Math.random() * 900) + 600, // 10-25 min
-                  timecode: "04:14:36:06",
+                  timecode: "02:14:36:06",
                   fps: 25,
                   codec: "mpeg2video",
                   width: 1920,
@@ -217,14 +222,26 @@ const seconds = pad(timePeriod.second)
       
   
       const idx = (typeof insertIndex === 'number') ? insertIndex : metaData.length;
-      const prevRow = idx > 0 ? metaData[idx - 1] : null;
+      const rowsOfDate = metaData.filter(
+        row => getRowDate(row) === selectedDate
+      );
+      
+      const prevRow = rowsOfDate.length
+        ? rowsOfDate[rowsOfDate.length - 1]
+        : null;
   
       // Compute prevEndTimeDate safely
-      const prevEndTimeDate = prevRow 
-        ? new Date(prevRow.endTime) 
-        : new Date();
-      if (!prevRow) prevEndTimeDate.setHours(0, 0, 0, 0);
-  
+      let prevEndTimeDate;
+
+if (prevRow) {
+  // Take time from previous row, but FORCE selectedDate
+  const [, timePart] = prevRow.endTime.split(" ");
+  prevEndTimeDate = new Date(`${selectedDate}T${timePart}`);
+} else {
+  // No previous row → midnight of selectedDate
+  prevEndTimeDate = new Date(`${selectedDate}T00:00:00`);
+}
+  console.log("prevRow",prevRow)
       // Compute frame-aware timePeriod
       const prevTimePeriod = prevRow?.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 };
       const timePeriod = item.timePeriod || { hour: 0, minute: 0, second: 0, frame: 0 };
@@ -238,14 +255,28 @@ const seconds = pad(timePeriod.second)
         __insertIndex: idx,
         __insertAfterId: prevRow ? prevRow.id : null,
         __insertAfterName: prevRow ? prevRow.name : null,
+        prevRowType: prevRow? prevRow.type: "",
+        
       };
       
       const MAX_SECONDS = 24 * 3600; // 86400
 
       // Get last meta row accumulated time
-      const lastMetaRow = metaData[metaData.length - 1];
-      const lastSeconds = lastMetaRow
-        ? timePeriodToSeconds(lastMetaRow.timePeriod)
+      //const lastMetaRow = metaData[metaData.length - 1];
+      //const lastSeconds = lastMetaRow
+     //   ? timePeriodToSeconds(lastMetaRow.timePeriod)
+     //   : 0;
+
+     // 🔹 Only rows of the CURRENT selectedDate
+      const rowsOfSelectedDate = metaData.filter(
+        row => getRowDate(row) === selectedDate
+      );
+
+      // 🔹 Last row of THIS date only
+      const lastRowOfDate = rowsOfSelectedDate[rowsOfSelectedDate.length - 1];
+
+      const lastSeconds = lastRowOfDate
+        ? timePeriodToSeconds(lastRowOfDate.timePeriod)
         : 0;
 
       // Duration of dragged row
@@ -264,7 +295,10 @@ const seconds = pad(timePeriod.second)
       
   
       setPendingRow(tentative);
-      setFormInputs(prev => ({ ...prev }));
+      setFormInputs(prev => ({
+        ...prev,
+        date: selectedDate   // ✅ force correct date
+      }));
       setShowAddDialog(true);
       return;
     }
@@ -280,45 +314,79 @@ const seconds = pad(timePeriod.second)
   };
 
   // In parent: Tables.jsx
-const handleDeleteRow = (id) => {
-  setMetaData(prev => prev.filter(row => row.id !== id));
-  toast.info(`Deleted row ${id}`)
-};
+  const handleDeleteRow = (ids) => {
+    setMetaData(prev => {
+      const filtered = prev.filter(row => !ids.includes(row.id));
+      return recalcSchedule(filtered);
+    });
+  
+    toast.info(`${ids.length} rows deleted`);
+  };
+
+  const getRowDate = (row) => {
+    return (
+      row.startTime?.split(" ")[0] ||
+      row.prevEndTime?.split(" ")[0] ||
+      selectedDate   // ✅ final fallback
+    );
+  };
+  
+  const getMidnight = (row) =>
+    new Date(`${getRowDate(row)}T00:00:00`);
 
 
   // --- NEW: recalcSchedule to recompute start/end/timePeriod/frame rates for all rows
- const recalcSchedule = (arr) => {
-  const updated = arr.map(r => ({ ...r }));
-  const midnight = new Date(new Date().setHours(0, 0, 0, 0));
-  //console.log("updated",updated)
-
-  for (let i = 0; i < updated.length; i++) {
-    const prev = i > 0 ? updated[i - 1] : null;
-
-    const startDate = prev ? new Date(prev.endTime) : new Date(midnight);
-
-    const durationStr = updated[i].duration || "00:00:00:00";
-
-    const durationMs = computeDuration(durationStr);
-    const endDate = new Date(startDate.getTime() + durationMs);
-
-    const prevAccumTP = prev ? prev.timePeriod : { hour: 0, minute: 0, second: 0, frameRate: 0 };
-    const tp = computeTimePeriod(prevAccumTP, durationStr);
-   // console.log("testing:", formatDate(startDate), formatDate(endDate), updated[i].timePeriod, updated[i].prevTimePeriod)
-    updated[i].startTime = formatDate(startDate)
-    updated[i].endTime = formatDate(endDate)
-    updated[i].timePeriod = tp;
-   // updated[i].frameRate = tp.frameRate;
-    updated[i].prevEndTime = prev ? formatDate(prev.endTime) : formatDate(midnight);
-
-     // ✅ Update PREVIOUS references
-     updated[i].prevEndTime = prev ? formatDate(prev.endTime) : formatDate(midnight);
-     updated[i].prevTimePeriod = prev ? { ...prev.timePeriod } : { hour: 0, minute: 0, second: 0, frameRate: 0 };
-     updated[i].prevFrameRate = updated[i].prevTimePeriod.frameRate;
-  }
+  const recalcSchedule = (arr) => {
+    const updated = arr.map(r => ({ ...r }));
+  
+    // 🔹 group rows by date
+    const byDate = updated.reduce((acc, row) => {
+      const date = getRowDate(row);
+      acc[date] = acc[date] || [];
+      acc[date].push(row);
+      return acc;
+    }, {});
+  
+    // 🔹 recalc EACH date independently
+    Object.entries(byDate).forEach(([date, rows]) => {
+      for (let i = 0; i < rows.length; i++) {
+        const prev = i > 0 ? rows[i - 1] : null;
+  
+        const startDate = prev
+          ? new Date(prev.endTime)
+          : new Date(`${date}T00:00:00`);
+  
+        const durationStr = rows[i].duration || "00:00:00:00";
+        const durationMs = computeDuration(durationStr);
+        const endDate = new Date(startDate.getTime() + durationMs);
+  
+        const prevAccumTP = prev
+          ? prev.timePeriod
+          : { hour: 0, minute: 0, second: 0, frameRate: 0 };
+  
+        const tp = computeTimePeriod(prevAccumTP, durationStr);
+  
+        rows[i].startTime = formatDate(startDate);
+        rows[i].endTime = formatDate(endDate);
+        rows[i].timePeriod = tp;
+  
+        // ✅ prevEndTime is NOW date-safe
+        rows[i].prevEndTime = prev
+          ? formatDate(prev.endTime)
+          : `${date} 00:00:00`;
+  
+        rows[i].prevTimePeriod = prev
+          ? { ...prev.timePeriod }
+          : { hour: 0, minute: 0, second: 0, frameRate: 0 };
+  
+        rows[i].prevFrameRate = rows[i].prevTimePeriod.frameRate;
+      }
+    });
   console.log("updated", updated)
-  return updated;
-};
+    return updated;
+  };
+  
+  
 
 
 
@@ -333,13 +401,43 @@ const handleDeleteRow = (id) => {
   const [searchValue, setSearchValue] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'id', direction: 'asc' });
 
-  useEffect(() => {
+  const [selectedDate, setSelectedDate] = useState(getToday());
+
+const handleDateChange = (date) => {
+  setSelectedDate(date);
+
+  const pageIndex = datePages.indexOf(date);
+  if (pageIndex !== -1) {
     setPagination(prev => ({
       ...prev,
-      totalRecords: metaData.length,
-      totalPages: Math.ceil(metaData.length / prev.pageSize),
+      currentPage: pageIndex + 1,
     }));
-  }, [metaData]);
+  }
+};
+
+  const groupByDate = (data) => {
+    return data.reduce((acc, row) => {
+      const date = row.startTime?.split(" ")[0]; // YYYY-MM-DD
+      if (!date) return acc;
+      acc[date] = acc[date] || [];
+      acc[date].push(row);
+      return acc;
+    }, {});
+  };
+
+  const groupedByDate = groupByDate(metaData);
+const datePages = Object.keys(groupedByDate).sort(); // sorted dates
+const pageData = groupedByDate[selectedDate] || [];
+
+useEffect(() => {
+  setPagination(prev => ({
+    ...prev,
+    totalRecords: datePages.length,
+    totalPages: datePages.length,
+  }));
+}, [metaData]);
+
+
 
   const handleSearch = value => setSearchValue(value);
   const handleSort = (field, direction) => setSortConfig({ field, direction });
@@ -402,11 +500,32 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
 
     
      // Safely get previous row
-     const prevRow = idx > 0 ? updated[idx - 1] : null;
+     const rowsOfDate = updated.filter(
+      row => getRowDate(row) === selectedDate
+    );
+    
+    const prevRow = rowsOfDate.length
+      ? rowsOfDate[rowsOfDate.length - 1]
+      : null;
+     console.log("updated from handleaddconfirm ",updated) 
+     console.log("idx ",idx) 
+     const pageDate = selectedDate;
 
+    // console.log("pageDate", pageDate)
+     
     // Start time = end time of previous row OR midnight
-    const baseStart = prevRow ? new Date(prevRow.endTime) : new Date(new Date().setHours(0, 0, 0, 0));
-   // console.log("baseStart",baseStart)
+    let baseStart;
+
+        if (prevRow) {
+          // Take time from prevRow, but FORCE date from selectedDate
+          const [_, timePart] = prevRow.endTime.split(" ");
+          baseStart = new Date(`${selectedDate}T${timePart}`);
+        } else {
+          baseStart = new Date(`${selectedDate}T00:00:00`);
+        }
+   console.log("baseStart",baseStart)
+   console.log("baseStartFormat",formatDate(baseStart))
+   //console.log("prevRow.endTime",prevRow.endTime)
 
     // Duration to endTime
     const durationMs = computeDuration(item.duration || "00:00:00:00");
@@ -436,9 +555,12 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
       isCommercial: formInputs.isCommercial,
       bonus: formInputs.bonus,
       selectSpot:formInputs.selectSpot,
-      prevEndTime: prevRow ? formatDate(prevRow.endTime) : formatDate(new Date(new Date().setHours(0, 0, 0, 0))),
+      prevEndTime: prevRow
+  ? formatDate(prevRow.endTime)
+  : `${selectedDate} 00:00:00`,
       prevTimePeriod: prevRow ? { ...prevRow.timePeriod } : { hour: 0, minute: 0, second: 0, frameRate: 0 },
-      prevFrameRate: prevRow ? prevRow.timePeriod.frameRate : 0
+      prevFrameRate: prevRow ? prevRow.timePeriod.frameRate : 0,
+      prevRowType: prevRow? prevRow.type: "",
     };
 
     console.log("Inserting row", rowToInsert);
@@ -582,10 +704,7 @@ const downloadPDF = (data = metaData) => {
   doc.save(`meta_table_${new Date().toISOString().slice(0,10)}.pdf`);
 };
 
-const getToday = () => {
-  const today = new Date();
-  return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
-};
+
 
 const [hourlyInterval, setHourlyInterval] = useState("");
 
@@ -800,7 +919,8 @@ console.log("metadata:",metaData)
                         type="date"
                         className="form-control text-xs w-30"
                         id="fromDate"
-                        defaultValue={getToday()}
+                        value={selectedDate}
+                        onChange={(e) => handleDateChange(e.target.value)}
                       />
                     </div>
                     <div className='flex flex-row gap-2'>
@@ -822,7 +942,7 @@ console.log("metadata:",metaData)
                 </div>
                 <div className="card-body" style={{ padding: 0, height: 'calc(100vh - 220px)' }}>
                   <TableMeta
-                    data={metaData}
+                    data={pageData}
                     onMoveRow={moveRow}
                     from="meta"
                     onSearch={handleSearch}
@@ -841,11 +961,12 @@ console.log("metadata:",metaData)
                      onDeleteRow={handleDeleteRow}
                     totalRecords={pagination.totalRecords}
                     currentPage={pagination.currentPage}
-                    pageSize={pagination.pageSize}
+                    pageSize={1}
                     loading={loading}
                     searchValue={searchValue}
                     serverSide
                     fillHeight
+                    selectedDate={selectedDate}
                   />
                 </div>
               </div>
