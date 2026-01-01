@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const API_URL = "http://172.16.9.132:8080/api/v1/package/";
+const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/package/`;
 
 const PackageSettings = () => {
   const [packages, setPackages] = useState([]);

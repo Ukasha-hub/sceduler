@@ -4,7 +4,7 @@ import axios from "axios";
 const TableVistriaArchive = ({ RazunaData ,setRazunaData, loadingAPI, setLoadingAPI ,selectedSource, setSelectedSource, filteredDataRazuna , setFilteredDataRazuna , onMoveRow, from }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
-  const API_URL = "http://172.16.9.132:8080/api/v1/package/";
+  const API_URL = `${process.env.REACT_APP_API_URL}/api/v1/package/`;
   
   // default checked
   const [selectedFilter, setSelectedFilter] = useState(""); 
@@ -33,7 +33,7 @@ const fetchPackages = async () => {
 useEffect(() => {
   const fetchFilters = async () => {
     try {
-      const res = await axios.get("http://172.16.9.132:8080/api/v1/filters/");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/filters/`);
       const colorMap = {};
       res.data.forEach(item => {
         colorMap[item.type] = item.color;

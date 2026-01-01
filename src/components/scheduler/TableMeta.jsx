@@ -53,11 +53,12 @@ const [showImportPackageModal, setShowImportPackageModal] = useState(false);
 const [availablePackages, setAvailablePackages] = useState([]);
 const [selectedPackageName, setSelectedPackageName] = useState("");
 const [typeColors, setTypeColors] = useState({});
+//`${process.env.REACT_APP_API_URL}/api/v1/hourly-ad/`
 
 useEffect(() => {
   const fetchPackages = async () => {
     try {
-      const res = await axios.get("http://172.16.9.132:8080/api/v1/package/");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/package/`);
       setAvailablePackages(res.data || []);
     } catch (err) {
       console.error("Failed to load packages", err);
@@ -140,7 +141,7 @@ const formatTimeWithFrame = (tp) => {
 useEffect(() => {
   const fetchFilters = async () => {
     try {
-      const res = await axios.get("http://172.16.9.132:8080/api/v1/filters/");
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/v1/filters/`);
       const colorMap = {};
       res.data.forEach(item => {
         colorMap[item.type] = item.color;

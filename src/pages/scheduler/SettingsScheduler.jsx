@@ -5,7 +5,7 @@ import 'react-clock/dist/Clock.css';
 import axios from "axios";
 import dayjs from "dayjs";
 
-const API_BASE = "http://172.16.9.132:8080/api/v1/schedulerSettings/";
+const API_BASE = `${process.env.REACT_APP_API_URL}/api/v1/schedulerSettings/`;
 
 export const SettingsScheduler = () => {
   const [formData, setFormData] = useState({
