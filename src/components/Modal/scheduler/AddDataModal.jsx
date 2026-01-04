@@ -1,4 +1,5 @@
 import React from "react";
+import  { useEffect , useState } from "react";
 
 const AddDataModal = ({
   show,
@@ -8,6 +9,72 @@ const AddDataModal = ({
   setFormInputs,
   pendingRow
 }) => {
+
+  const [localDuration, setLocalDuration] = useState("00:00:00:00");
+
+// keep duration in sync when modal opens / formInputs updates
+useEffect(() => {
+  if (!show) return;
+
+  const defaultDuration =
+    formInputs.duration ||
+    pendingRow?.duration ||
+    "00:00:00:00";
+
+  setLocalDuration(defaultDuration);
+
+  // also ensure formInputs has it
+  setFormInputs((prev) => ({
+    ...prev,
+    duration: defaultDuration,
+  }));
+}, [show, pendingRow, formInputs.duration, setFormInputs]);
+
+  useEffect(() => {
+    const ra = parseInt(formInputs.rateAgreementNo, 10);
+  
+    if (Number.isNaN(ra)) {
+      // Clear agency if rate agreement is invalid or empty
+      setFormInputs(prev => ({
+        ...prev,
+        agency: "",
+      }));
+      return;
+    }
+  
+    let agency = "";
+  
+    if (ra >= 1 && ra <= 999) {
+      agency = "Agency Alpha";
+    } else if (ra >= 1000 && ra <= 1999) {
+      agency = "Agency Beta";
+    } else if (ra >= 2000 && ra <= 2999) {
+      agency = "Agency Gamma";
+    } else if (ra >= 3000) {
+      agency = "Agency Delta";
+    }
+  
+    setFormInputs(prev => ({
+      ...prev,
+      agency,
+    }));
+  }, [formInputs.rateAgreementNo, setFormInputs]);
+
+  useEffect(() => {
+    // Auto-select "Just Before" when:
+    // 1) Type is COM
+    // 2) Previous row type is NOT PGM
+    if (
+      pendingRow?.type === "COM" &&
+      pendingRow?.prevRowType !== "PGM"
+    ) {
+      setFormInputs((prev) => ({
+        ...prev,
+        selectSpot: "Just Before",
+      }));
+    }
+  }, [pendingRow, setFormInputs]);
+
   if (!show) return null; // Don't render if not visible
   console.log("PENDING ROW from modal", pendingRow)
   const isFormValid = (() => {
@@ -26,6 +93,9 @@ const AddDataModal = ({
   const needsJustBefore =
   pendingRow?.type === "COM" &&
   pendingRow?.prevRowType !== "PGM";
+
+  
+  
 
 const isSelectSpotValid =
   !needsJustBefore || formInputs.selectSpot === "Just Before";
@@ -77,6 +147,7 @@ if (pendingRow) {
     `${String(finalFrames).padStart(2, "0")}`;
 }
 
+console.log("formInputs", formInputs)
 
   return (
     <div
@@ -89,7 +160,7 @@ if (pendingRow) {
           <h5 className="modal-title text-white text-lg">
   Add New Data{" "}
   {pendingRow?.__insertAfterName
-    ? `(Insert After: ${pendingRow.__insertAfterName})`
+    ? `(Insert After: ${pendingRow.__insertAfterName}, index: ${pendingRow.__insertIndex})`
     : `(Append at End)`
   }
 </h5>
@@ -300,23 +371,59 @@ if (pendingRow) {
 {/* Duration */}
 <h6 className="font-bold text-xs mt-2">Duration</h6>
 <div className="flex flex-row flex-wrap gap-2">
-  {(() => {
-    // Split into hour, minute, second, frame
-    const [h = "00", m = "00", s = "00", f = "00"] = (pendingRow?.duration || "00:00:00:00").split(":");
+  {["hour", "minute", "second", "frame"].map((_, idx) => {
+    const durationParts = (localDuration || "::::").split(":");
+    let val = durationParts[idx] || "";
 
-    return [h, m, s, f].map((val, idx) => (
+    return (
       <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
         <input
           type="text"
           className="form-control form-control-sm text-xs"
           maxLength={2}
           placeholder="00"
-          value={val}          // ✅ Controlled and correct
-          readOnly            // ✅ As you want it display-only
+          value={val}
+          onChange={(e) => {
+            let newVal = e.target.value.replace(/\D/g, "");
+
+            if (newVal !== "") {
+              const num = parseInt(newVal, 10);
+              if (idx === 0) newVal = Math.min(num, 23).toString();        // HH
+              else if (idx === 1 || idx === 2) newVal = Math.min(num, 59).toString(); // MM SS
+              else if (idx === 3) newVal = Math.min(num, 24).toString();  // FF
+            }
+
+            const updated = [...durationParts];
+            updated[idx] = newVal;
+
+            const newDuration = updated.join(":");
+            setLocalDuration(newDuration);
+            setFormInputs({
+              ...formInputs,
+              duration: newDuration,
+            });
+          }}
+          onFocus={(e) => e.target.select()}
+          onBlur={() => {
+            const updated = [...durationParts].map((p, i) => {
+              let num = parseInt(p, 10) || 0;
+              if (i === 0) num = Math.min(num, 23);
+              else if (i === 1 || i === 2) num = Math.min(num, 59);
+              else if (i === 3) num = Math.min(num, 24);
+              return String(num).padStart(2, "0");
+            });
+
+            const newDuration = updated.join(":");
+            setLocalDuration(newDuration);
+            setFormInputs({
+              ...formInputs,
+              duration: newDuration,
+            });
+          }}
         />
       </div>
-    ));
-  })()}
+    );
+  })}
 </div>
 
 

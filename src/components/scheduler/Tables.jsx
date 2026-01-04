@@ -252,7 +252,7 @@ if (prevRow) {
         prevTimePeriod,
         timePeriod,
         
-        __insertIndex: idx,
+        __insertIndex: prevRow ? prevRow.__insertIndex+1 : 0,
         __insertAfterId: prevRow ? prevRow.id : null,
         __insertAfterName: prevRow ? prevRow.name : null,
         prevRowType: prevRow? prevRow.type: "",
@@ -544,7 +544,7 @@ const [formInputs, setFormInputs] = useState({  date: new Date().toISOString().s
       id: Date.now(),
       startTime: formatDate(baseStart),
       endTime: formatDate(newEnd),
-      duration: item.duration,
+      duration: formInputs.duration,
       timePeriod,
       frameRate: timePeriod.frameRate,
       slug: formInputs.slug,
@@ -943,6 +943,7 @@ console.log("metadata:",metaData)
                 <div className="card-body" style={{ padding: 0, height: 'calc(100vh - 220px)' }}>
                   <TableMeta
                     data={pageData}
+                    metaData={metaData}  
                     onMoveRow={moveRow}
                     from="meta"
                     onSearch={handleSearch}

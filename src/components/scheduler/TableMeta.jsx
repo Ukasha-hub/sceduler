@@ -5,7 +5,7 @@ import axios from "axios";
 
 import AddNewRowModal from "../Modal/scheduler/AddNewRowModal";
 
-const TableMeta = ( {data, onMoveRow, from, 
+const TableMeta = ( {data, metaData, onMoveRow, from, 
   columns, 
   onSearch, 
   onSort, 
@@ -424,7 +424,7 @@ const handlePaste = (insertAfterId = null, newDate = null) => {
     let insertIndex = updated.length;
 
     if (insertAfterId !== null) {
-      const idx = updated.findIndex(r => r.id === insertAfterId);
+      const idx = updated.findIndex(r => String(r.id) === String(insertAfterId));
       if (idx >= 0) insertIndex = idx + 1;
     }
 
@@ -498,7 +498,9 @@ const handleConfirmAddFile = (newRowData) => {
   if (!pendingRow) return;
 
   const insertAfterId = pendingRow.__insertAfterId;
-  const rowIndex = data.findIndex((r) => r.id === insertAfterId);
+  const rowIndex = metaData.findIndex(
+    r => String(r.id) === String(insertAfterId)
+  );
 
   // Compute new start and end time
   const FPS = 25;
@@ -550,7 +552,7 @@ const handleConfirmAddFile = (newRowData) => {
   // ✅ Insert new row into parent data array
  setMetaData(prev => {
   const updated = [...prev];
-  const insertIndex = rowIndex >= 0 ? rowIndex + 1 : updated.length;
+  const insertIndex = rowIndex >= 0 ? rowIndex + 1 : metaData.length;
   updated.splice(insertIndex, 0, newRow);
   return recalcSchedule ? recalcSchedule(updated) : updated;
 });
@@ -562,7 +564,7 @@ setFilteredData(prev => {
   updated.splice(insertIndex, 0, newRow);
   return updated;
 });
-  console.log("data after add", data)
+ console.log("data after add", data)
   setShowAddNewModal(false);
   setPendingRow(null);
 };
@@ -579,26 +581,32 @@ const handleImportPackage = (packageName) => {
   const pkg = availablePackages.find(p => p.name === packageName);
   if (!pkg) return;
 
- // console.log("pkg", pkg)
-
   const insertAfterId = selectedRow?.id || null;
 
   setMetaData(prev => {
     const updated = [...prev];
+
     let insertIndex = updated.length;
+    let insertAfterRow = null;
 
     if (insertAfterId !== null) {
-      const idx = updated.findIndex(r => r.id === insertAfterId);
-      if (idx >= 0) insertIndex = idx + 1;
+      const idx = updated.findIndex(r => String(r.id) === String(insertAfterId));
+      if (idx >= 0) {
+        insertIndex = idx + 1;
+        insertAfterRow = updated[idx];
+      }
     }
 
-    const newRows = pkg.items.map(item => ({
+    const newRows = pkg.items.map((item, i) => ({
       id: Date.now() + Math.random(),
+
       name: item.name,
       type: item.type,
       duration: item.duration,
+
       startTime: `${selectedDate} 00:00:00`,
       endTime: `${selectedDate} 00:00:00`,
+
       prevTimePeriod: { hour: 0, minute: 0, second: 0, frameRate: 0 },
       prevEndTime: `${selectedDate} 00:00:00`,
       timePeriod: {
@@ -607,10 +615,15 @@ const handleImportPackage = (packageName) => {
         second: 0,
         frameRate: item.fps || 25,
       },
+
+      // ✅ ADD THESE (same as drag behavior)
+      __insertIndex: insertIndex + i,
+      __insertAfterId: insertAfterRow ? insertAfterRow.id : null,
+      __insertAfterName: insertAfterRow ? insertAfterRow.name : null,
+      prevRowType: insertAfterRow ? insertAfterRow.type : "",
     }));
-     console.log("new rows", newRows)
+
     updated.splice(insertIndex, 0, ...newRows);
-    console.log("new rows added", updated)
     return recalcSchedule ? recalcSchedule(updated) : updated;
   });
 
@@ -946,7 +959,7 @@ const hasSelection = selectedRows.length > 0 || selectedRow;
     }}
   />
 )}
-{console.log("formInputs after update:", formInputs)}
+
 <AddNewRowModal
   show={showAddNewModal}
   onClose={() => setShowAddNewModal(false)}

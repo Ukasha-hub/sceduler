@@ -1,4 +1,5 @@
 import React from "react";
+import  { useEffect, useState } from "react";
 
 const UpdateSchedulerModal = ({
   show,
@@ -8,8 +9,61 @@ const UpdateSchedulerModal = ({
   onClose,
   onConfirm,
 }) => {
-  if (!show) return null;
 
+  const [localDuration, setLocalDuration] = useState("00:00:00:00");
+
+  useEffect(() => {
+    if (!show) return;
+  
+    const defaultDuration =
+      formInputs.duration || selectedRow?.duration || "00:00:00:00";
+  
+    setLocalDuration(defaultDuration);
+  
+    setFormInputs(prev => ({
+      ...prev,
+      duration: defaultDuration,
+    }));
+  }, [show, selectedRow, setFormInputs]);
+
+  useEffect(() => {
+    const ra = parseInt(formInputs.rateAgreementNo, 10);
+  
+    if (Number.isNaN(ra)) {
+      // Clear agency if rate agreement is invalid or empty
+      setFormInputs(prev => ({
+        ...prev,
+        agency: "",
+      }));
+      return;
+    }
+  
+    let agency = "";
+  
+    if (ra >= 1 && ra <= 999) {
+      agency = "Agency Alpha";
+    } else if (ra >= 1000 && ra <= 1999) {
+      agency = "Agency Beta";
+    } else if (ra >= 2000 && ra <= 2999) {
+      agency = "Agency Gamma";
+    } else if (ra >= 3000) {
+      agency = "Agency Delta";
+    }
+  
+    setFormInputs(prev => ({
+      ...prev,
+      agency,
+    }));
+  }, [formInputs.rateAgreementNo, setFormInputs]);
+
+  const startTime = selectedRow.startTime || "";
+  const dateFromStartTime = startTime ? startTime.split(" ")[0] : "";
+
+ 
+  if (!show) return null;
+  console.log("update row", selectedRow)
+
+ 
   return (
     <div
       className="modal fade show"
@@ -35,7 +89,7 @@ const UpdateSchedulerModal = ({
                 <input
                   type="date"
                   className="form-control form-control-sm text-xs"
-                  value={formInputs.date || ""}
+                  value={dateFromStartTime|| ""}
              readOnly
                 />
               </div>
@@ -135,7 +189,7 @@ const UpdateSchedulerModal = ({
                 <input
                   type="text"
                   className="form-control form-control-sm w-full text-xs"
-                  value={formInputs.projectName || ""}
+                  value={selectedRow.name  || ""}
                   readOnly
                 />
               </div>
@@ -144,7 +198,7 @@ const UpdateSchedulerModal = ({
                 <input
                   type="text"
                   className="form-control form-control-sm text-xs"
-                 value={formInputs.assetId || ""}
+                 value={selectedRow.id  || ""}
                   readOnly
                 />
               </div>
@@ -168,23 +222,59 @@ const UpdateSchedulerModal = ({
 {/* Duration */}
 <h6 className="font-bold text-xs mt-2">Duration</h6>
 <div className="flex flex-row flex-wrap gap-2">
-  {(() => {
-    // Split into hour, minute, second, frame
-    const [h = "", m = "", s = "", f = ""] = formInputs.duration?.split(":") || [];
+  {["hour", "minute", "second", "frame"].map((_, idx) => {
+    const durationParts = (localDuration || "::::").split(":");
+    let val = durationParts[idx] || "";
 
-    return [h, m, s, f].map((val, idx) => (
+    return (
       <div key={idx} className="form-group" style={{ flex: "0 0 22%" }}>
         <input
           type="text"
           className="form-control form-control-sm text-xs"
           maxLength={2}
           placeholder="00"
-          value={val}          // ✅ Controlled and correct
-          readOnly            // ✅ As you want it display-only
+          value={val}
+          onChange={(e) => {
+            let newVal = e.target.value.replace(/\D/g, "");
+
+            if (newVal !== "") {
+              const num = parseInt(newVal, 10);
+              if (idx === 0) newVal = Math.min(num, 23).toString();
+              else if (idx === 1 || idx === 2) newVal = Math.min(num, 59).toString();
+              else if (idx === 3) newVal = Math.min(num, 24).toString();
+            }
+
+            const updated = [...durationParts];
+            updated[idx] = newVal;
+
+            const newDuration = updated.join(":");
+            setLocalDuration(newDuration);
+            setFormInputs({
+              ...formInputs,
+              duration: newDuration,
+            });
+          }}
+          onFocus={(e) => e.target.select()}
+          onBlur={() => {
+            const updated = [...durationParts].map((p, i) => {
+              let num = parseInt(p, 10) || 0;
+              if (i === 0) num = Math.min(num, 23);
+              else if (i === 1 || i === 2) num = Math.min(num, 59);
+              else if (i === 3) num = Math.min(num, 24);
+              return String(num).padStart(2, "0");
+            });
+
+            const newDuration = updated.join(":");
+            setLocalDuration(newDuration);
+            setFormInputs({
+              ...formInputs,
+              duration: newDuration,
+            });
+          }}
         />
       </div>
-    ));
-  })()}
+    );
+  })}
 </div>
            
 

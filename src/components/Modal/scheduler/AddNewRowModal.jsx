@@ -15,6 +15,36 @@ useEffect(() => {
   setLocalDuration(formInputs.duration || "00:00:00:00");
 }, [formInputs.duration]);
 
+useEffect(() => {
+  const ra = parseInt(formInputs.rateAgreementNo, 10);
+
+  if (Number.isNaN(ra)) {
+    // Clear agency if rate agreement is invalid or empty
+    setFormInputs(prev => ({
+      ...prev,
+      agency: "",
+    }));
+    return;
+  }
+
+  let agency = "";
+
+  if (ra >= 1 && ra <= 999) {
+    agency = "Agency Alpha";
+  } else if (ra >= 1000 && ra <= 1999) {
+    agency = "Agency Beta";
+  } else if (ra >= 2000 && ra <= 2999) {
+    agency = "Agency Gamma";
+  } else if (ra >= 3000) {
+    agency = "Agency Delta";
+  }
+
+  setFormInputs(prev => ({
+    ...prev,
+    agency,
+  }));
+}, [formInputs.rateAgreementNo, setFormInputs]);
+
     if (!show) return null; // Don't render if not visible
    console.log("PENDING ROW",pendingRow)
     const isFormValid = (() => {
