@@ -125,6 +125,7 @@ useEffect(() => {
 
   const handleDragStart = (e, item) => {
     e.dataTransfer.setData("rowData", JSON.stringify(item));
+    e.dataTransfer.setData("rowId", item.id);
     e.dataTransfer.setData("fromTable", from);
 
   
@@ -168,12 +169,7 @@ useEffect(() => {
   const tr = e.target.closest("tr");
   let insertIndex = null;
 
-  if (tr && tr.dataset && tr.dataset.rowId) {
-    const targetId = tr.dataset.rowId;
-    const idx = data.findIndex(r => String(r.id) === String(targetId));
-insertIndex = idx >= 0 ? idx + 1 : data.length;
-    if (idx >= 0) insertIndex = idx + 1;
-  }
+  
 
   if (insertIndex === null) insertIndex = filteredData.length;
 
@@ -183,6 +179,43 @@ insertIndex = idx >= 0 ? idx + 1 : data.length;
   if (fromTable !== from && onMoveRow) {
     onMoveRow(newRow, fromTable, from, insertIndex);
   }
+};
+
+const handleInternalRowDrop = (e) => {
+  e.preventDefault();
+
+  const draggedRowId = e.dataTransfer.getData("rowId");
+  const fromTable = e.dataTransfer.getData("fromTable");
+
+  // ❌ Ignore external drops (keep your existing handleDrop for those)
+  if (!draggedRowId || fromTable !== from) return;
+
+  const draggedIndex = metaData.findIndex(
+    r => String(r.id) === String(draggedRowId)
+  );
+  if (draggedIndex === -1) return;
+
+  const tr = e.target.closest("tr");
+  let targetIndex = metaData.length - 1; // default → last
+
+  if (tr?.dataset?.rowId) {
+    const targetId = tr.dataset.rowId;
+    const idx = metaData.findIndex(r => String(r.id) === String(targetId));
+    if (idx !== -1) targetIndex = idx;
+  }
+
+  if (draggedIndex === targetIndex) return;
+
+  setMetaData(prev => {
+    const updated = [...prev];
+    const [movedRow] = updated.splice(draggedIndex, 1);
+
+    const insertIndex =
+      draggedIndex < targetIndex ? targetIndex : targetIndex;
+
+    updated.splice(insertIndex, 0, movedRow);
+    return recalcSchedule ? recalcSchedule(updated) : updated;
+  });
 };
 
   
@@ -558,12 +591,7 @@ const handleConfirmAddFile = (newRowData) => {
 });
 
 // also update filteredData locally
-setFilteredData(prev => {
-  const updated = [...prev];
-  const insertIndex = rowIndex >= 0 ? rowIndex + 1 : updated.length;
-  updated.splice(insertIndex, 0, newRow);
-  return updated;
-});
+
  console.log("data after add", data)
   setShowAddNewModal(false);
   setPendingRow(null);
@@ -651,6 +679,17 @@ const anySelectedRowLocked = selectedRows.some(id => {
 const isTableEmpty = filteredData.length === 0;
 const hasSelection = selectedRows.length > 0 || selectedRow;
 
+const handleUpdateRow = (updatedRow) => {
+  setMetaData(prev => {
+    // Replace the updated row in metaData
+    const updated = prev.map(r => r.id === updatedRow.id ? updatedRow : r);
+
+    // Recalculate all subsequent rows start/end times
+    return recalcSchedule ? recalcSchedule(updated) : updated;
+  });
+
+  setShowUpdate(false);
+};
   
     return (
       <div 
@@ -661,7 +700,10 @@ const hasSelection = selectedRows.length > 0 || selectedRow;
           
         }}
         onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
+        onDrop={(e) => {
+          handleInternalRowDrop(e); // 👈 internal move
+          handleDrop(e);           // 👈 existing external logic
+        }}
       >
         {/* Toast container */}
     
@@ -943,20 +985,7 @@ const hasSelection = selectedRows.length > 0 || selectedRow;
     formInputs={formInputs}
     setFormInputs={setFormInputs}
     onClose={() => setShowUpdate(false)}
-    onConfirm={(updatedData) => {
-      setMetaData(prev => {
-        const updated = prev.map(row =>
-          row.id === selectedRow.id ? { ...row, ...updatedData } : row
-        );
-        setFilteredData(updated); // update filtered view too
-        return updated;
-      });
-    
-      // Merge updates with existing selectedRow
-      setSelectedRow(prev => ({ ...prev, ...updatedData }));
-    
-      setShowUpdate(false);
-    }}
+    onConfirm={handleUpdateRow}
   />
 )}
 

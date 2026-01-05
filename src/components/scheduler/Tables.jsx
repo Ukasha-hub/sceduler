@@ -252,7 +252,7 @@ if (prevRow) {
         prevTimePeriod,
         timePeriod,
         
-        __insertIndex: prevRow ? prevRow.__insertIndex+1 : 0,
+        __insertIndex: idx,
         __insertAfterId: prevRow ? prevRow.id : null,
         __insertAfterName: prevRow ? prevRow.name : null,
         prevRowType: prevRow? prevRow.type: "",
